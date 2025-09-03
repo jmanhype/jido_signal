@@ -1,6 +1,8 @@
 defmodule Jido.Signal.CustomTest do
   use ExUnit.Case, async: true
 
+  alias Jido.Signal.ID
+
   # Define a test Signal module
   defmodule TestSignal do
     use Jido.Signal,
@@ -33,19 +35,19 @@ defmodule Jido.Signal.CustomTest do
 
   describe "TestSignal" do
     test "creates valid signal with required data" do
-      data = %{user_id: "123", message: "Hello World"}
+      data = %{message: "Hello World", user_id: "123"}
 
       assert {:ok, signal} = TestSignal.new(data)
       assert %Jido.Signal{} = signal
       assert signal.type == "test.signal"
-      assert signal.data == %{user_id: "123", message: "Hello World", count: 1}
+      assert signal.data == %{count: 1, message: "Hello World", user_id: "123"}
       assert signal.specversion == "1.0.2"
       assert is_binary(signal.id)
       assert is_binary(signal.time)
     end
 
     test "creates signal with new! function" do
-      data = %{user_id: "456", message: "Test"}
+      data = %{message: "Test", user_id: "456"}
 
       signal = TestSignal.new!(data)
       assert %Jido.Signal{} = signal
@@ -61,21 +63,21 @@ defmodule Jido.Signal.CustomTest do
     end
 
     test "validates data types" do
-      data = %{user_id: "123", message: "Hello", count: "not_an_integer"}
+      data = %{count: "not_an_integer", message: "Hello", user_id: "123"}
 
       assert {:error, error} = TestSignal.new(data)
       assert error =~ "expected integer"
     end
 
     test "uses default values from schema" do
-      data = %{user_id: "123", message: "Hello"}
+      data = %{message: "Hello", user_id: "123"}
 
       assert {:ok, signal} = TestSignal.new(data)
       assert signal.data.count == 1
     end
 
     test "allows overriding signal options" do
-      data = %{user_id: "123", message: "Hello"}
+      data = %{message: "Hello", user_id: "123"}
       opts = [source: "/custom/source", subject: "custom-subject"]
 
       assert {:ok, signal} = TestSignal.new(data, opts)
@@ -94,7 +96,7 @@ defmodule Jido.Signal.CustomTest do
     end
 
     test "validates data with validate_data/1" do
-      valid_data = %{user_id: "123", message: "Hello"}
+      valid_data = %{message: "Hello", user_id: "123"}
       assert {:ok, validated} = TestSignal.validate_data(valid_data)
       assert validated.count == 1
 
@@ -162,18 +164,18 @@ defmodule Jido.Signal.CustomTest do
 
   describe "Signal ID generation" do
     test "generates valid UUID7 IDs" do
-      {:ok, signal} = TestSignal.new(%{user_id: "123", message: "test"})
+      {:ok, signal} = TestSignal.new(%{message: "test", user_id: "123"})
 
-      assert Jido.Signal.ID.valid?(signal.id)
+      assert ID.valid?(signal.id)
 
       # Extract timestamp should work
-      timestamp = Jido.Signal.ID.extract_timestamp(signal.id)
+      timestamp = ID.extract_timestamp(signal.id)
       assert is_integer(timestamp)
       assert timestamp > 0
     end
 
     test "IDs are unique across multiple signals" do
-      data = %{user_id: "123", message: "test"}
+      data = %{message: "test", user_id: "123"}
 
       {:ok, signal1} = TestSignal.new(data)
       {:ok, signal2} = TestSignal.new(data)
@@ -184,7 +186,7 @@ defmodule Jido.Signal.CustomTest do
 
   describe "Signal serialization" do
     test "can serialize and deserialize custom signals" do
-      data = %{user_id: "123", message: "Hello"}
+      data = %{message: "Hello", user_id: "123"}
       {:ok, original} = TestSignal.new(data)
 
       {:ok, json} = Jido.Signal.serialize(original)
@@ -210,7 +212,7 @@ defmodule Jido.Signal.CustomTest do
 
     test "provides meaningful error messages" do
       # user_id should be string
-      data = %{user_id: 123, message: "Hello"}
+      data = %{message: "Hello", user_id: 123}
 
       assert {:error, error} = TestSignal.new(data)
       assert error =~ "expected string"

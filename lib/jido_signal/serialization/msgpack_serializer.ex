@@ -108,8 +108,7 @@ if Code.ensure_loaded?(Msgpax) do
       %{"__tuple__" => data |> Tuple.to_list() |> Enum.map(&preprocess_for_msgpack/1)}
     end
 
-    defp preprocess_for_msgpack(data)
-         when is_atom(data) and not is_nil(data) and not is_boolean(data) do
+    defp preprocess_for_msgpack(data) when is_atom(data) and not is_nil(data) and not is_boolean(data) do
       # Convert atoms to strings, but preserve nil and booleans
       Atom.to_string(data)
     end

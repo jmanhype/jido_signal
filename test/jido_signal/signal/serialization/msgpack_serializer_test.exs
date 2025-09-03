@@ -63,9 +63,9 @@ defmodule Jido.Signal.Serialization.MsgpackSerializerTest do
 
     test "handles nested tuples and complex structures" do
       original = %{
-        result: {:ok, "success"},
         coordinates: {1.0, 2.0, 3.0},
-        nested: %{inner: {:error, "failed"}}
+        nested: %{inner: {:error, "failed"}},
+        result: {:ok, "success"}
       }
 
       {:ok, serialized} = MsgpackSerializer.serialize(original)
@@ -79,8 +79,8 @@ defmodule Jido.Signal.Serialization.MsgpackSerializerTest do
 
     test "serializes and deserializes maps with mixed types" do
       original = %{
-        "string_key" => "value",
         42 => "numeric_key",
+        "string_key" => "value",
         nested: %{
           data: [1, 2, 3],
           meta: true
@@ -125,11 +125,11 @@ defmodule Jido.Signal.Serialization.MsgpackSerializerTest do
 
     test "preserves nil, boolean, and numeric types" do
       original = %{
-        null_value: nil,
-        bool_true: true,
         bool_false: false,
-        integer: 42,
+        bool_true: true,
         float: 3.14159,
+        integer: 42,
+        null_value: nil,
         zero: 0
       }
 

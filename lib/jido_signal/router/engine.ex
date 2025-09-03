@@ -24,19 +24,19 @@ defmodule Jido.Signal.Router.Engine do
       case route.match do
         nil ->
           handler_info = %HandlerInfo{
-            target: route.target,
+            complexity: calculate_complexity(route.path),
             priority: route.priority,
-            complexity: calculate_complexity(route.path)
+            target: route.target
           }
 
           do_add_path_route(segments, trie, handler_info)
 
         match_fn ->
           pattern_match = %PatternMatch{
+            complexity: calculate_complexity(route.path),
             match: match_fn,
-            target: route.target,
             priority: route.priority,
-            complexity: calculate_complexity(route.path)
+            target: route.target
           }
 
           do_add_pattern_route(segments, trie, pattern_match)
@@ -67,7 +67,7 @@ defmodule Jido.Signal.Router.Engine do
   Counts total routes in the trie.
   """
   @spec count_routes(TrieNode.t()) :: non_neg_integer()
-  def count_routes(%TrieNode{segments: segments, handlers: handlers}) do
+  def count_routes(%TrieNode{handlers: handlers, segments: segments}) do
     handler_count =
       case handlers do
         %NodeHandlers{handlers: handlers} when is_list(handlers) ->
@@ -107,7 +107,8 @@ defmodule Jido.Signal.Router.Engine do
 
     # Exact segment matches are worth more at start of path
     exact_matches =
-      Enum.with_index(segments)
+      segments
+      |> Enum.with_index()
       |> Enum.reduce(0, fn {segment, index}, acc ->
         case segment do
           "**" -> acc
@@ -119,7 +120,8 @@ defmodule Jido.Signal.Router.Engine do
 
     # Penalty calculation with position weighting
     penalties =
-      Enum.with_index(segments)
+      segments
+      |> Enum.with_index()
       |> Enum.reduce(0, fn {segment, index}, acc ->
         case segment do
           # Double wildcard has massive penalty, reduced if it comes after exact matches
@@ -270,7 +272,8 @@ defmodule Jido.Signal.Router.Engine do
     handler_results =
       case node_handlers.handlers do
         handlers when is_list(handlers) ->
-          Enum.map(handlers, fn info ->
+          handlers
+          |> Enum.map(fn info ->
             case info.target do
               targets when is_list(targets) ->
                 # For multiple dispatch targets, create a tuple for each target
@@ -348,9 +351,9 @@ defmodule Jido.Signal.Router.Engine do
                 targets when is_list(targets) ->
                   Enum.map(targets, fn target ->
                     %HandlerInfo{
-                      target: target,
+                      complexity: handler_info.complexity,
                       priority: handler_info.priority,
-                      complexity: handler_info.complexity
+                      target: target
                     }
                   end)
 
@@ -458,7 +461,7 @@ defmodule Jido.Signal.Router.Engine do
   end
 
   # Collects all routes from the trie into a list of Route structs
-  defp collect_routes(%TrieNode{segments: segments, handlers: handlers}, acc, path_prefix) do
+  defp collect_routes(%TrieNode{handlers: handlers, segments: segments}, acc, path_prefix) do
     # Add any handlers at current node
     acc =
       case handlers do
@@ -466,13 +469,13 @@ defmodule Jido.Signal.Router.Engine do
         when is_list(handlers) and (is_list(handlers) and handlers != []) ->
           # Preserve order by not reversing here
           Enum.map(handlers, fn %HandlerInfo{
-                                  target: target,
-                                  priority: priority
+                                  priority: priority,
+                                  target: target
                                 } ->
             %Route{
               path: String.trim_leading(path_prefix, "."),
-              target: target,
-              priority: priority
+              priority: priority,
+              target: target
             }
           end) ++ acc
 
@@ -480,15 +483,15 @@ defmodule Jido.Signal.Router.Engine do
         when is_list(matchers) and (is_list(matchers) and matchers != []) ->
           # Preserve order by not reversing here
           Enum.map(matchers, fn %PatternMatch{
-                                  target: target,
+                                  match: match,
                                   priority: priority,
-                                  match: match
+                                  target: target
                                 } ->
             %Route{
+              match: match,
               path: String.trim_leading(path_prefix, "."),
-              target: target,
               priority: priority,
-              match: match
+              target: target
             }
           end) ++ acc
 

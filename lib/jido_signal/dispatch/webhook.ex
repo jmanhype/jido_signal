@@ -73,6 +73,9 @@ defmodule Jido.Signal.Dispatch.Webhook do
 
   @behaviour Jido.Signal.Dispatch.Adapter
 
+  alias Jido.Signal.Dispatch.Adapter
+  alias Jido.Signal.Dispatch.Http
+
   require Logger
 
   @default_signature_header "x-webhook-signature"
@@ -87,9 +90,9 @@ defmodule Jido.Signal.Dispatch.Webhook do
           event_type_map: %{String.t() => String.t()} | nil
         ]
   @type webhook_error ::
-          :invalid_secret | :invalid_event_type_map | Jido.Signal.Dispatch.Http.delivery_error()
+          :invalid_secret | :invalid_event_type_map | Http.delivery_error()
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Validates the webhook adapter configuration options.
 
@@ -112,7 +115,7 @@ defmodule Jido.Signal.Dispatch.Webhook do
   """
   @spec validate_opts(Keyword.t()) :: {:ok, Keyword.t()} | {:error, term()}
   def validate_opts(opts) do
-    with {:ok, _} <- Jido.Signal.Dispatch.Http.validate_opts(opts),
+    with {:ok, _} <- Http.validate_opts(opts),
          {:ok, secret} <- validate_secret(Keyword.get(opts, :secret)),
          {:ok, signature_header} <-
            validate_header_name(
@@ -134,7 +137,7 @@ defmodule Jido.Signal.Dispatch.Webhook do
     end
   end
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Delivers a signal via webhook.
 
@@ -172,7 +175,7 @@ defmodule Jido.Signal.Dispatch.Webhook do
 
     # Delegate to HTTP adapter
     opts = Keyword.put(opts, :headers, headers)
-    Jido.Signal.Dispatch.Http.deliver(signal, opts)
+    Http.deliver(signal, opts)
   end
 
   # Private Helpers
@@ -194,8 +197,7 @@ defmodule Jido.Signal.Dispatch.Webhook do
     end
   end
 
-  defp validate_event_type_map(invalid),
-    do: {:error, "event_type_map must be a map or nil, got: #{inspect(invalid)}"}
+  defp validate_event_type_map(invalid), do: {:error, "event_type_map must be a map or nil, got: #{inspect(invalid)}"}
 
   defp add_signature_header(headers, payload, timestamp, opts) do
     case Keyword.get(opts, :secret) do
@@ -220,7 +222,8 @@ defmodule Jido.Signal.Dispatch.Webhook do
   defp generate_signature(payload, timestamp, secret) do
     string_to_sign = "#{timestamp}.#{payload}"
 
-    :crypto.mac(:hmac, :sha256, secret, string_to_sign)
+    :hmac
+    |> :crypto.mac(:sha256, secret, string_to_sign)
     |> Base.encode16(case: :lower)
   end
 

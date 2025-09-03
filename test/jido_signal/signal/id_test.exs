@@ -207,7 +207,7 @@ defmodule JidoTest.Signal.IDTest do
       by_timestamp = Enum.group_by(ids, &ID.extract_timestamp/1)
 
       # Verify timestamps are sequential
-      timestamps = Map.keys(by_timestamp) |> Enum.sort()
+      timestamps = by_timestamp |> Map.keys() |> Enum.sort()
       # Should span multiple milliseconds
       assert length(timestamps) > 1
       assert hd(timestamps) == start_ts

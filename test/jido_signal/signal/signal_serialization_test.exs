@@ -2,13 +2,16 @@ defmodule Jido.SignalSerializationTest do
   use ExUnit.Case, async: false
 
   alias Jido.Signal
+  alias Jido.Signal.Serialization.ErlangTermSerializer
+  alias Jido.Signal.Serialization.JsonSerializer
+  alias Jido.Signal.Serialization.MsgpackSerializer
 
   describe "Signal.serialize/1" do
     test "serializes a simple signal" do
       signal = %Signal{
-        type: "test.event",
+        id: "test-id-123",
         source: "/test/source",
-        id: "test-id-123"
+        type: "test.event"
       }
 
       {:ok, json} = Signal.serialize(signal)
@@ -23,10 +26,10 @@ defmodule Jido.SignalSerializationTest do
 
     test "serializes a signal with data" do
       signal = %Signal{
-        type: "test.event",
-        source: "/test/source",
+        data: %{key: "value", number: 42},
         id: "test-id-123",
-        data: %{key: "value", number: 42}
+        source: "/test/source",
+        type: "test.event"
       }
 
       {:ok, json} = Signal.serialize(signal)
@@ -39,8 +42,8 @@ defmodule Jido.SignalSerializationTest do
 
     test "serializes a list of signals" do
       signals = [
-        %Signal{type: "first.event", source: "/test/first", id: "first-id"},
-        %Signal{type: "second.event", source: "/test/second", id: "second-id"}
+        %Signal{id: "first-id", source: "/test/first", type: "first.event"},
+        %Signal{id: "second-id", source: "/test/second", type: "second.event"}
       ]
 
       {:ok, json} = Signal.serialize(signals)
@@ -54,9 +57,9 @@ defmodule Jido.SignalSerializationTest do
 
     test "legacy serialize! function" do
       signal = %Signal{
-        type: "test.event",
+        id: "test-id-123",
         source: "/test/source",
-        id: "test-id-123"
+        type: "test.event"
       }
 
       json = Signal.serialize!(signal)
@@ -125,19 +128,19 @@ defmodule Jido.SignalSerializationTest do
   describe "round-trip serialization" do
     test "preserves signal data through serialization and deserialization" do
       original = %Signal{
-        type: "test.event",
-        source: "/test/source",
-        id: "test-id-123",
-        subject: "test-subject",
-        time: "2023-01-01T12:00:00Z",
+        data: %{
+          "boolean" => true,
+          "nested" => %{"key" => "nested-value"},
+          "number" => 42,
+          "string" => "value"
+        },
         datacontenttype: "application/json",
         dataschema: "https://example.com/schema",
-        data: %{
-          "string" => "value",
-          "number" => 42,
-          "boolean" => true,
-          "nested" => %{"key" => "nested-value"}
-        }
+        id: "test-id-123",
+        source: "/test/source",
+        subject: "test-subject",
+        time: "2023-01-01T12:00:00Z",
+        type: "test.event"
       }
 
       {:ok, json} = Signal.serialize(original)
@@ -158,8 +161,8 @@ defmodule Jido.SignalSerializationTest do
 
     test "preserves list of signals through serialization and deserialization" do
       originals = [
-        %Signal{type: "first.event", source: "/test/first", id: "first-id"},
-        %Signal{type: "second.event", source: "/test/second", id: "second-id"}
+        %Signal{id: "first-id", source: "/test/first", type: "first.event"},
+        %Signal{id: "second-id", source: "/test/second", type: "second.event"}
       ]
 
       {:ok, json} = Signal.serialize(originals)
@@ -167,7 +170,8 @@ defmodule Jido.SignalSerializationTest do
 
       assert length(deserialized) == length(originals)
 
-      Enum.zip(originals, deserialized)
+      originals
+      |> Enum.zip(deserialized)
       |> Enum.each(fn {original, deserialized} ->
         assert deserialized.type == original.type
         assert deserialized.source == original.source
@@ -177,16 +181,16 @@ defmodule Jido.SignalSerializationTest do
 
     test "round-trip with different serializers" do
       signal = %Signal{
-        type: "test.event",
-        source: "/test/source",
+        data: %{"count" => 42, "message" => "hello"},
         id: "test-id-123",
-        data: %{"message" => "hello", "count" => 42}
+        source: "/test/source",
+        type: "test.event"
       }
 
       serializers = [
-        Jido.Signal.Serialization.JsonSerializer,
-        Jido.Signal.Serialization.ErlangTermSerializer,
-        Jido.Signal.Serialization.MsgpackSerializer
+        JsonSerializer,
+        ErlangTermSerializer,
+        MsgpackSerializer
       ]
 
       for serializer <- serializers do

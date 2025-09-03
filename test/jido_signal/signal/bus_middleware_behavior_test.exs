@@ -2,18 +2,19 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
   use ExUnit.Case, async: true
 
   alias Jido.Signal
+  alias Jido.Signal.Bus.Middleware
   alias Jido.Signal.Bus.Subscriber
 
   @moduletag :capture_log
 
   # Test implementation using the __using__ macro
   defmodule DefaultImplementationTest do
-    use Jido.Signal.Bus.Middleware
+    use Middleware
   end
 
   # Test implementation with custom overrides
   defmodule CustomImplementationTest do
-    use Jido.Signal.Bus.Middleware
+    use Middleware
 
     @impl true
     def init(opts) do
@@ -52,7 +53,7 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
 
   # Test implementation that returns errors
   defmodule ErrorImplementationTest do
-    use Jido.Signal.Bus.Middleware
+    use Middleware
 
     @impl true
     def init(_opts) do
@@ -67,8 +68,8 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     end
 
     test "before_publish/3 returns signals unchanged" do
-      signals = [%Signal{id: "test", type: "test", source: "/test"}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{id: "test", source: "/test", type: "test"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{}
 
       assert {:cont, ^signals, ^state} =
@@ -76,8 +77,8 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     end
 
     test "after_publish/3 returns signals unchanged" do
-      signals = [%Signal{id: "test", type: "test", source: "/test"}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{id: "test", source: "/test", type: "test"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{}
 
       assert {:cont, ^signals, ^state} =
@@ -85,9 +86,9 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     end
 
     test "before_dispatch/4 returns signal unchanged" do
-      signal = %Signal{id: "test", type: "test", source: "/test"}
-      subscriber = %Subscriber{id: "test", path: "test", dispatch: {:pid, self()}}
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signal = %Signal{id: "test", source: "/test", type: "test"}
+      subscriber = %Subscriber{dispatch: {:pid, self()}, id: "test", path: "test"}
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{}
 
       assert {:cont, ^signal, ^state} =
@@ -95,10 +96,10 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     end
 
     test "after_dispatch/5 returns state unchanged" do
-      signal = %Signal{id: "test", type: "test", source: "/test"}
-      subscriber = %Subscriber{id: "test", path: "test", dispatch: {:pid, self()}}
+      signal = %Signal{id: "test", source: "/test", type: "test"}
+      subscriber = %Subscriber{dispatch: {:pid, self()}, id: "test", path: "test"}
       result = :ok
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{}
 
       assert {:cont, ^state} =
@@ -119,8 +120,8 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     end
 
     test "before_publish/3 can modify signals" do
-      signals = [%Signal{id: "test", type: "test", source: "/test", data: %{original: true}}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{data: %{original: true}, id: "test", source: "/test", type: "test"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{custom: "test"}
 
       assert {:cont, modified_signals, ^state} =
@@ -132,8 +133,8 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     end
 
     test "after_publish/3 can modify state" do
-      signals = [%Signal{id: "test", type: "test", source: "/test"}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{id: "test", source: "/test", type: "test"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{custom: "test"}
 
       assert {:cont, ^signals, updated_state} =
@@ -144,9 +145,9 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     end
 
     test "before_dispatch/4 can modify signal" do
-      signal = %Signal{id: "test", type: "test", source: "/test", data: %{original: true}}
-      subscriber = %Subscriber{id: "test", path: "test", dispatch: {:pid, self()}}
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signal = %Signal{data: %{original: true}, id: "test", source: "/test", type: "test"}
+      subscriber = %Subscriber{dispatch: {:pid, self()}, id: "test", path: "test"}
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{custom: "test"}
 
       assert {:cont, modified_signal, ^state} =
@@ -157,10 +158,10 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     end
 
     test "after_dispatch/5 can modify state" do
-      signal = %Signal{id: "test", type: "test", source: "/test"}
-      subscriber = %Subscriber{id: "test", path: "test", dispatch: {:pid, self()}}
+      signal = %Signal{id: "test", source: "/test", type: "test"}
+      subscriber = %Subscriber{dispatch: {:pid, self()}, id: "test", path: "test"}
       result = :ok
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{custom: "test"}
 
       assert {:cont, updated_state} =
@@ -181,11 +182,11 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     test "context contains required fields" do
       context = %{
         bus_name: :test_bus,
-        timestamp: DateTime.utc_now(),
-        metadata: %{custom: "data"}
+        metadata: %{custom: "data"},
+        timestamp: DateTime.utc_now()
       }
 
-      signals = [%Signal{id: "test", type: "test", source: "/test"}]
+      signals = [%Signal{id: "test", source: "/test", type: "test"}]
       state = %{}
 
       # Ensure the context structure is valid for all callbacks
@@ -196,7 +197,7 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
                DefaultImplementationTest.after_publish(signals, context, state)
 
       signal = List.first(signals)
-      subscriber = %Subscriber{id: "test", path: "test", dispatch: {:pid, self()}}
+      subscriber = %Subscriber{dispatch: {:pid, self()}, id: "test", path: "test"}
 
       assert {:cont, ^signal, ^state} =
                DefaultImplementationTest.before_dispatch(signal, subscriber, context, state)
@@ -208,9 +209,9 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
 
   describe "dispatch result types" do
     test "after_dispatch handles :ok result" do
-      signal = %Signal{id: "test", type: "test", source: "/test"}
-      subscriber = %Subscriber{id: "test", path: "test", dispatch: {:pid, self()}}
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signal = %Signal{id: "test", source: "/test", type: "test"}
+      subscriber = %Subscriber{dispatch: {:pid, self()}, id: "test", path: "test"}
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{}
 
       assert {:cont, ^state} =
@@ -218,9 +219,9 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     end
 
     test "after_dispatch handles error result" do
-      signal = %Signal{id: "test", type: "test", source: "/test"}
-      subscriber = %Subscriber{id: "test", path: "test", dispatch: {:pid, self()}}
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signal = %Signal{id: "test", source: "/test", type: "test"}
+      subscriber = %Subscriber{dispatch: {:pid, self()}, id: "test", path: "test"}
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
       state = %{}
 
       error_result = {:error, :dispatch_failed}
@@ -240,11 +241,11 @@ defmodule JidoTest.Signal.Bus.MiddlewareBehaviorTest do
     test "modules using middleware have correct behaviour" do
       # Verify the behaviour is properly attached
       assert DefaultImplementationTest.__info__(:attributes)[:behaviour] == [
-               Jido.Signal.Bus.Middleware
+               Middleware
              ]
 
       assert CustomImplementationTest.__info__(:attributes)[:behaviour] == [
-               Jido.Signal.Bus.Middleware
+               Middleware
              ]
     end
   end

@@ -41,11 +41,11 @@ defmodule Jido.Signal.RouterPatternTest do
   describe "filter/2" do
     setup do
       signals = [
-        %Signal{type: "user.created", data: %{id: 1}, source: "test", id: "1"},
-        %Signal{type: "user.updated", data: %{id: 1}, source: "test", id: "2"},
-        %Signal{type: "payment.processed", data: %{amount: 100}, source: "test", id: "3"},
-        %Signal{type: "audit.user.created", data: %{user_id: 1}, source: "test", id: "4"},
-        %Signal{type: "audit.payment.processed", data: %{payment_id: 1}, source: "test", id: "5"}
+        %Signal{data: %{id: 1}, id: "1", source: "test", type: "user.created"},
+        %Signal{data: %{id: 1}, id: "2", source: "test", type: "user.updated"},
+        %Signal{data: %{amount: 100}, id: "3", source: "test", type: "payment.processed"},
+        %Signal{data: %{user_id: 1}, id: "4", source: "test", type: "audit.user.created"},
+        %Signal{data: %{payment_id: 1}, id: "5", source: "test", type: "audit.payment.processed"}
       ]
 
       {:ok, signals: signals}
@@ -80,7 +80,7 @@ defmodule Jido.Signal.RouterPatternTest do
     end
 
     test "handles signals with nil types", %{signals: signals} do
-      signals = [%Signal{type: nil, source: "test", id: "6"} | signals]
+      signals = [%Signal{id: "6", source: "test", type: nil} | signals]
       filtered = Router.filter(signals, "user.*")
       assert length(filtered) == 2
       assert Enum.all?(filtered, &String.starts_with?(&1.type, "user."))

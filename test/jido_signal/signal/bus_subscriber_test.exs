@@ -10,8 +10,8 @@ defmodule JidoTest.Signal.Bus.SubscriberTest do
       {:ok, supervisor_pid} = DynamicSupervisor.start_link(strategy: :one_for_one)
 
       state = %BusState{
-        name: :test_bus,
-        child_supervisor: supervisor_pid
+        child_supervisor: supervisor_pid,
+        name: :test_bus
       }
 
       {:ok, state: state}
@@ -94,8 +94,8 @@ defmodule JidoTest.Signal.Bus.SubscriberTest do
       {:ok, supervisor_pid} = DynamicSupervisor.start_link(strategy: :one_for_one)
 
       state = %BusState{
-        name: :test_bus,
-        child_supervisor: supervisor_pid
+        child_supervisor: supervisor_pid,
+        name: :test_bus
       }
 
       # Add a regular subscription

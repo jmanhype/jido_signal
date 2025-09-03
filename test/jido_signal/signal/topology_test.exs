@@ -53,12 +53,12 @@ defmodule JidoTest.Signal.TopologyTest do
       process = updated_topology.processes["root1"]
 
       assert %ProcessNode{
+               child_ids: child_ids,
                id: "root1",
-               pid: ^pid,
+               metadata: %{},
                name: "Root Process",
                parent_id: nil,
-               child_ids: child_ids,
-               metadata: %{}
+               pid: ^pid
              } = process
 
       assert MapSet.size(child_ids) == 0
@@ -67,7 +67,7 @@ defmodule JidoTest.Signal.TopologyTest do
     test "registers a process with metadata" do
       topology = Topology.new()
       {:ok, pid} = TestGenServer.start_link(%{})
-      metadata = %{type: "worker", priority: :high}
+      metadata = %{priority: :high, type: "worker"}
 
       assert {:ok, updated_topology} =
                Topology.register(topology, "worker1", pid, metadata: metadata)
@@ -273,7 +273,7 @@ defmodule JidoTest.Signal.TopologyTest do
       # Try to make grandparent a child of child (would create cycle)
       assert {:error, :cycle_detected} = Topology.set_parent(topology, "child", "grandparent")
 
-      # Try to make parent a child of child (would create cycle)  
+      # Try to make parent a child of child (would create cycle)
       assert {:error, :cycle_detected} = Topology.set_parent(topology, "child", "parent")
 
       # Try to make process parent of itself
@@ -598,7 +598,7 @@ defmodule JidoTest.Signal.TopologyTest do
       assert {:ok, updated_topology} = Topology.update_metadata(topology, "proc1", new_metadata)
 
       process = updated_topology.processes["proc1"]
-      assert process.metadata == %{type: "worker", priority: :high, status: :active}
+      assert process.metadata == %{priority: :high, status: :active, type: "worker"}
     end
 
     test "returns error for nonexistent process" do
@@ -613,11 +613,11 @@ defmodule JidoTest.Signal.TopologyTest do
       initial_metadata = %{type: "worker", version: 1}
       {:ok, topology} = Topology.register(topology, "proc1", pid, metadata: initial_metadata)
 
-      update_metadata = %{version: 2, status: :active}
+      update_metadata = %{status: :active, version: 2}
       {:ok, updated_topology} = Topology.update_metadata(topology, "proc1", update_metadata)
 
       process = updated_topology.processes["proc1"]
-      expected_metadata = %{type: "worker", version: 2, status: :active}
+      expected_metadata = %{status: :active, type: "worker", version: 2}
       assert process.metadata == expected_metadata
     end
   end

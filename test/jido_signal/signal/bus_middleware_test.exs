@@ -14,7 +14,7 @@ defmodule JidoTest.Signal.Bus.Middleware do
     @impl true
     def init(opts) do
       test_pid = Keyword.fetch!(opts, :test_pid)
-      {:ok, %{test_pid: test_pid, calls: []}}
+      {:ok, %{calls: [], test_pid: test_pid}}
     end
 
     @impl true
@@ -178,9 +178,9 @@ defmodule JidoTest.Signal.Bus.Middleware do
       # Create a test signal
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       # Publish the signal
@@ -202,9 +202,9 @@ defmodule JidoTest.Signal.Bus.Middleware do
       # Create and publish a test signal
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus, [signal])
@@ -221,9 +221,9 @@ defmodule JidoTest.Signal.Bus.Middleware do
     test "middleware receives correct context information", %{bus: bus} do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus, [signal])
@@ -255,9 +255,9 @@ defmodule JidoTest.Signal.Bus.Middleware do
       # Create signal with original type
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus, [signal])
@@ -271,15 +271,15 @@ defmodule JidoTest.Signal.Bus.Middleware do
 
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus, [signal])
 
       # Signal should be received with transformed data
-      assert_receive {:signal, %Signal{data: %{value: 1, transformed: true}}}
+      assert_receive {:signal, %Signal{data: %{transformed: true, value: 1}}}
     end
   end
 
@@ -296,9 +296,9 @@ defmodule JidoTest.Signal.Bus.Middleware do
 
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       # Publish should fail due to middleware halt
@@ -322,9 +322,9 @@ defmodule JidoTest.Signal.Bus.Middleware do
 
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       # Publish should succeed, but dispatch will be halted
@@ -358,16 +358,16 @@ defmodule JidoTest.Signal.Bus.Middleware do
 
       {:ok, signal1} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, signal2} =
         Signal.new(%{
-          type: "other.signal",
+          data: %{value: 2},
           source: "/test",
-          data: %{value: 2}
+          type: "other.signal"
         })
 
       {:ok, _} = Bus.publish(bus_name, [signal1])
@@ -386,8 +386,7 @@ defmodule JidoTest.Signal.Bus.Middleware do
       bus_name = "test-bus-#{:erlang.unique_integer([:positive])}"
 
       middleware = [
-        {LoggerMiddleware,
-         level: :debug, log_publish: true, log_dispatch: true, include_signal_data: true}
+        {LoggerMiddleware, level: :debug, log_publish: true, log_dispatch: true, include_signal_data: true}
       ]
 
       start_supervised!({Bus, name: bus_name, middleware: middleware})
@@ -401,9 +400,9 @@ defmodule JidoTest.Signal.Bus.Middleware do
 
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{message: "test data", value: 1},
           source: "/test",
-          data: %{value: 1, message: "test data"}
+          type: "test.signal"
         })
 
       # This will generate log output due to LoggerMiddleware
@@ -477,9 +476,9 @@ defmodule JidoTest.Signal.Bus.Middleware do
 
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus_name, [signal])

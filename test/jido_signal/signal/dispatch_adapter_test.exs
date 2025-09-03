@@ -149,9 +149,9 @@ defmodule JidoTest.Signal.Dispatch.AdapterTest do
     setup do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{message: "test delivery"},
           source: "/test",
-          data: %{message: "test delivery"}
+          type: "test.signal"
         })
 
       {:ok, signal: signal}
@@ -202,9 +202,9 @@ defmodule JidoTest.Signal.Dispatch.AdapterTest do
     setup do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{message: "test delivery"},
           source: "/test",
-          data: %{message: "test delivery"}
+          type: "test.signal"
         })
 
       {:ok, signal: signal}
@@ -252,9 +252,9 @@ defmodule JidoTest.Signal.Dispatch.AdapterTest do
     setup do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{message: "test delivery"},
           source: "/test",
-          data: %{message: "test delivery"}
+          type: "test.signal"
         })
 
       {:ok, signal: signal}
@@ -278,8 +278,8 @@ defmodule JidoTest.Signal.Dispatch.AdapterTest do
     test "adapter handles signal with no data", %{} do
       {:ok, signal_no_data} =
         Signal.new(%{
-          type: "test.signal",
-          source: "/test"
+          source: "/test",
+          type: "test.signal"
         })
 
       opts = [required_option: "test", validated: true]
@@ -288,16 +288,16 @@ defmodule JidoTest.Signal.Dispatch.AdapterTest do
 
     test "adapter handles signal with complex data", %{} do
       complex_data = %{
-        user: %{id: 123, name: "test"},
-        metadata: %{version: "1.0", tags: ["important", "urgent"]},
-        nested: %{deep: %{value: "test"}}
+        metadata: %{tags: ["important", "urgent"], version: "1.0"},
+        nested: %{deep: %{value: "test"}},
+        user: %{id: 123, name: "test"}
       }
 
       {:ok, signal} =
         Signal.new(%{
-          type: "complex.signal",
+          data: complex_data,
           source: "/test",
-          data: complex_data
+          type: "complex.signal"
         })
 
       opts = [required_option: "test", validated: true]
@@ -319,14 +319,14 @@ defmodule JidoTest.Signal.Dispatch.AdapterTest do
     end
 
     test "adapter handles malformed options" do
-      {:ok, _signal} = Signal.new(%{type: "test", source: "/test"})
+      {:ok, _signal} = Signal.new(%{source: "/test", type: "test"})
 
       # Non-keyword list options should be handled in validate_opts
       assert {:error, :invalid_opts_format} = TestAdapter.validate_opts(%{not: "keyword"})
     end
 
     test "adapter can handle empty options after validation" do
-      {:ok, signal} = Signal.new(%{type: "test", source: "/test"})
+      {:ok, signal} = Signal.new(%{source: "/test", type: "test"})
 
       # MinimalAdapter should handle empty options
       assert {:ok, []} = MinimalAdapter.validate_opts([])
@@ -338,9 +338,9 @@ defmodule JidoTest.Signal.Dispatch.AdapterTest do
     setup do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{message: "test delivery"},
           source: "/test",
-          data: %{message: "test delivery"}
+          type: "test.signal"
         })
 
       {:ok, signal: signal}

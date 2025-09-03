@@ -27,6 +27,8 @@ defmodule Jido.Signal.Serialization.Config do
       Jido.Signal.Serialization.Config.set_default_type_provider(MyCustomTypeProvider)
   """
 
+  alias Jido.Signal.Serialization.Serializer
+  alias Jido.Signal.Serialization.TypeProvider
   alias Jido.Signal.Serialization.{JsonSerializer, ModuleNameTypeProvider}
 
   @doc """
@@ -80,11 +82,10 @@ defmodule Jido.Signal.Serialization.Config do
     if Code.ensure_loaded?(serializer) do
       behaviours = serializer.module_info(:attributes)[:behaviour] || []
 
-      if Jido.Signal.Serialization.Serializer in behaviours do
+      if Serializer in behaviours do
         :ok
       else
-        {:error,
-         "#{inspect(serializer)} does not implement Jido.Signal.Serialization.Serializer behaviour"}
+        {:error, "#{inspect(serializer)} does not implement Jido.Signal.Serialization.Serializer behaviour"}
       end
     else
       {:error, "#{inspect(serializer)} module not found"}
@@ -99,11 +100,10 @@ defmodule Jido.Signal.Serialization.Config do
     if Code.ensure_loaded?(type_provider) do
       behaviours = type_provider.module_info(:attributes)[:behaviour] || []
 
-      if Jido.Signal.Serialization.TypeProvider in behaviours do
+      if TypeProvider in behaviours do
         :ok
       else
-        {:error,
-         "#{inspect(type_provider)} does not implement Jido.Signal.Serialization.TypeProvider behaviour"}
+        {:error, "#{inspect(type_provider)} does not implement Jido.Signal.Serialization.TypeProvider behaviour"}
       end
     else
       {:error, "#{inspect(type_provider)} module not found"}

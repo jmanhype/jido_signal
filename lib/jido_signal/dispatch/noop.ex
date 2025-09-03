@@ -43,7 +43,9 @@ defmodule Jido.Signal.Dispatch.NoopAdapter do
 
   @behaviour Jido.Signal.Dispatch.Adapter
 
-  @impl Jido.Signal.Dispatch.Adapter
+  alias Jido.Signal.Dispatch.Adapter
+
+  @impl Adapter
   @doc """
   Validates the noop adapter configuration options.
 
@@ -61,7 +63,7 @@ defmodule Jido.Signal.Dispatch.NoopAdapter do
   @spec validate_opts(Keyword.t()) :: {:ok, Keyword.t()}
   def validate_opts(opts), do: {:ok, opts}
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Silently discards the signal without performing any operation.
 

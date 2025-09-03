@@ -47,8 +47,8 @@ defmodule Jido.Signal.RouterDefinitionTest do
               [
                 %Route{
                   path: ^path,
-                  target: ^target,
-                  priority: ^priority
+                  priority: ^priority,
+                  target: ^target
                 }
               ]} = Validator.normalize({path, target, priority})
     end
@@ -64,9 +64,9 @@ defmodule Jido.Signal.RouterDefinitionTest do
       assert {:ok,
               [
                 %Route{
+                  match: ^match_fn,
                   path: ^path,
-                  target: ^target,
-                  match: ^match_fn
+                  target: ^target
                 }
               ]} = Validator.normalize({path, match_fn, target})
     end
@@ -83,10 +83,10 @@ defmodule Jido.Signal.RouterDefinitionTest do
       assert {:ok,
               [
                 %Route{
-                  path: ^path,
-                  target: ^target,
                   match: ^match_fn,
-                  priority: ^priority
+                  path: ^path,
+                  priority: ^priority,
+                  target: ^target
                 }
               ]} = Validator.normalize({path, match_fn, target, priority})
     end
@@ -170,8 +170,8 @@ defmodule Jido.Signal.RouterDefinitionTest do
     test "validates valid Route struct" do
       route = %Router.Route{
         path: "test.path",
-        target: :test_action,
-        priority: 0
+        priority: 0,
+        target: :test_action
       }
 
       assert {:ok, ^route} = Router.validate(route)
@@ -185,8 +185,8 @@ defmodule Jido.Signal.RouterDefinitionTest do
         },
         %Router.Route{
           path: "test.path2",
-          target: :test_action,
-          priority: 10
+          priority: 10,
+          target: :test_action
         }
       ]
 
@@ -295,9 +295,9 @@ defmodule Jido.Signal.RouterDefinitionTest do
 
     test "returns error for invalid match function" do
       route = %Router.Route{
+        match: "not_a_function",
         path: "test.path",
-        target: :test_action,
-        match: "not_a_function"
+        target: :test_action
       }
 
       assert {:error, error} = Router.validate(route)
@@ -332,8 +332,8 @@ defmodule Jido.Signal.RouterDefinitionTest do
                        handlers: %Router.NodeHandlers{
                          handlers: [
                            %Router.HandlerInfo{
-                             target: :test_action,
-                             priority: 0
+                             priority: 0,
+                             target: :test_action
                            }
                          ]
                        }
@@ -369,8 +369,8 @@ defmodule Jido.Signal.RouterDefinitionTest do
                        handlers: %Router.NodeHandlers{
                          handlers: [
                            %Router.HandlerInfo{
-                             target: :test_action,
-                             priority: 0
+                             priority: 0,
+                             target: :test_action
                            }
                          ]
                        }
@@ -379,8 +379,8 @@ defmodule Jido.Signal.RouterDefinitionTest do
                        handlers: %Router.NodeHandlers{
                          handlers: [
                            %Router.HandlerInfo{
-                             target: :test_action,
-                             priority: 0
+                             priority: 0,
+                             target: :test_action
                            }
                          ]
                        }
@@ -419,8 +419,8 @@ defmodule Jido.Signal.RouterDefinitionTest do
                        handlers: %Router.NodeHandlers{
                          handlers: [
                            %Router.HandlerInfo{
-                             target: :test_action,
-                             priority: 0
+                             priority: 0,
+                             target: :test_action
                            }
                          ]
                        }
@@ -476,8 +476,8 @@ defmodule Jido.Signal.RouterDefinitionTest do
                        handlers: %Router.NodeHandlers{
                          handlers: [
                            %Router.HandlerInfo{
-                             target: :test_action,
-                             priority: 0
+                             priority: 0,
+                             target: :test_action
                            }
                          ]
                        }
@@ -529,14 +529,14 @@ defmodule Jido.Signal.RouterDefinitionTest do
       assert Enum.all?(listed_routes, fn route ->
                match?(
                  %Router.Route{
-                   target: :test_action,
-                   priority: 0
+                   priority: 0,
+                   target: :test_action
                  },
                  route
                )
              end)
 
-      assert Enum.map(listed_routes, & &1.path) |> Enum.sort() == ["test.path1", "test.path2"]
+      assert listed_routes |> Enum.map(& &1.path) |> Enum.sort() == ["test.path1", "test.path2"]
     end
 
     test "lists empty routes" do

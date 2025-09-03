@@ -57,14 +57,14 @@ defmodule Jido.Signal.Router.Validator do
      Error.validation_error(
        "Invalid route specification format",
        %{
-         value: invalid,
          expected_formats: [
            "%Route{}",
            "{path, target}",
            "{path, target, priority}",
            "{path, match_fn, target}",
            "{path, match_fn, target, priority}"
-         ]
+         ],
+         value: invalid
        }
      )}
   end
@@ -76,19 +76,17 @@ defmodule Jido.Signal.Router.Validator do
     end
   end
 
-  defp normalize_route_spec({path, target, priority})
-       when is_binary(path) and is_integer(priority) do
+  defp normalize_route_spec({path, target, priority}) when is_binary(path) and is_integer(priority) do
     case normalize_target(target) do
       {:ok, normalized_target} ->
-        {:ok, %Route{path: path, target: normalized_target, priority: priority}}
+        {:ok, %Route{path: path, priority: priority, target: normalized_target}}
     end
   end
 
-  defp normalize_route_spec({path, match_fn, target})
-       when is_binary(path) and is_function(match_fn, 1) do
+  defp normalize_route_spec({path, match_fn, target}) when is_binary(path) and is_function(match_fn, 1) do
     case normalize_target(target) do
       {:ok, normalized_target} ->
-        {:ok, %Route{path: path, target: normalized_target, match: match_fn}}
+        {:ok, %Route{match: match_fn, path: path, target: normalized_target}}
     end
   end
 
@@ -98,10 +96,10 @@ defmodule Jido.Signal.Router.Validator do
       {:ok, normalized_target} ->
         {:ok,
          %Route{
-           path: path,
-           target: normalized_target,
            match: match_fn,
-           priority: priority
+           path: path,
+           priority: priority,
+           target: normalized_target
          }}
     end
   end
@@ -111,14 +109,14 @@ defmodule Jido.Signal.Router.Validator do
      Error.validation_error(
        "Invalid route specification format",
        %{
-         value: invalid,
          expected_formats: [
            "%Route{}",
            "{path, target}",
            "{path, target, priority}",
            "{path, match_fn, target}",
            "{path, match_fn, target, priority}"
-         ]
+         ],
+         value: invalid
        }
      )}
   end
@@ -290,13 +288,13 @@ defmodule Jido.Signal.Router.Validator do
 
   def validate_match(match_fn) when is_function(match_fn, 1) do
     test_signal = %Signal{
-      type: "",
-      source: "",
-      id: "",
       data: %{
         amount: 0,
         currency: "USD"
-      }
+      },
+      id: "",
+      source: "",
+      type: ""
     }
 
     case match_fn.(test_signal) do

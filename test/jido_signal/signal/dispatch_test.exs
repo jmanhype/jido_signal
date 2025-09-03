@@ -2,6 +2,8 @@ defmodule Jido.Signal.DispatchTest do
   use ExUnit.Case, async: true
 
   alias Jido.Signal.Dispatch
+  alias Jido.Signal.Error.DispatchError
+  alias Jido.Signal.Error.InvalidInputError
 
   setup do
     # Enable error normalization for all tests
@@ -51,11 +53,11 @@ defmodule Jido.Signal.DispatchTest do
   describe "pid adapter" do
     setup do
       signal = %Jido.Signal{
+        data: %{},
         id: "test_signal",
-        type: "test",
         source: "test",
         time: DateTime.utc_now(),
-        data: %{}
+        type: "test"
       }
 
       {:ok, signal: signal}
@@ -92,18 +94,18 @@ defmodule Jido.Signal.DispatchTest do
       assert_receive {:DOWN, ^ref, :process, ^pid, _}
 
       config = {:pid, [target: pid, delivery_mode: :async]}
-      assert {:error, %Jido.Signal.Error.DispatchError{}} = Dispatch.dispatch(signal, config)
+      assert {:error, %DispatchError{}} = Dispatch.dispatch(signal, config)
     end
   end
 
   describe "named adapter" do
     setup do
       signal = %Jido.Signal{
+        data: %{},
         id: "test_signal",
-        type: "test",
         source: "test",
         time: DateTime.utc_now(),
-        data: %{}
+        type: "test"
       }
 
       {:ok, signal: signal}
@@ -120,18 +122,18 @@ defmodule Jido.Signal.DispatchTest do
 
     test "returns error when named process not found", %{signal: signal} do
       config = {:named, [target: {:name, :nonexistent_process}, delivery_mode: :async]}
-      assert {:error, %Jido.Signal.Error.DispatchError{}} = Dispatch.dispatch(signal, config)
+      assert {:error, %DispatchError{}} = Dispatch.dispatch(signal, config)
     end
   end
 
   describe "bus adapter" do
     setup do
       signal = %Jido.Signal{
+        data: %{},
         id: "test_signal",
-        type: "test",
         source: "test",
         time: DateTime.utc_now(),
-        data: %{}
+        type: "test"
       }
 
       {:ok, signal: signal}
@@ -145,7 +147,7 @@ defmodule Jido.Signal.DispatchTest do
     test "returns error when bus config is invalid", %{signal: signal} do
       # Missing stream
       config = {MockBusAdapter, [target: :test_bus]}
-      assert {:error, %Jido.Signal.Error.DispatchError{}} = Dispatch.dispatch(signal, config)
+      assert {:error, %DispatchError{}} = Dispatch.dispatch(signal, config)
     end
   end
 
@@ -203,11 +205,11 @@ defmodule Jido.Signal.DispatchTest do
   describe "multiple dispatch" do
     setup do
       signal = %Jido.Signal{
+        data: %{value: 42},
         id: "test_signal",
-        type: "test.event",
         source: "test",
         time: DateTime.utc_now(),
-        data: %{value: 42}
+        type: "test.event"
       }
 
       # Create a named process to receive signals
@@ -238,8 +240,8 @@ defmodule Jido.Signal.DispatchTest do
 
     @tag :capture_log
     test "delivers signal to multiple adapters simultaneously", %{
-      signal: signal,
-      named_process: named_process
+      named_process: named_process,
+      signal: signal
     } do
       test_pid = self()
 
@@ -276,7 +278,7 @@ defmodule Jido.Signal.DispatchTest do
         {:logger, [level: :debug]}
       ]
 
-      assert {:error, %Jido.Signal.Error.DispatchError{}} = Dispatch.dispatch(signal, config)
+      assert {:error, %DispatchError{}} = Dispatch.dispatch(signal, config)
 
       # Should still receive the async signal
       assert_receive {:signal, received_signal}
@@ -298,7 +300,7 @@ defmodule Jido.Signal.DispatchTest do
         {:logger, [level: :debug]}
       ]
 
-      assert {:error, %Jido.Signal.Error.DispatchError{}} = Dispatch.dispatch(signal, config)
+      assert {:error, %DispatchError{}} = Dispatch.dispatch(signal, config)
 
       # Verify successful dispatches still occurred
       assert_receive {:signal, received_signal}
@@ -309,11 +311,11 @@ defmodule Jido.Signal.DispatchTest do
   describe "dispatch_async/2" do
     setup do
       signal = %Jido.Signal{
+        data: %{},
         id: "test_signal",
-        type: "test",
         source: "test",
         time: DateTime.utc_now(),
-        data: %{}
+        type: "test"
       }
 
       {:ok, signal: signal}
@@ -337,7 +339,7 @@ defmodule Jido.Signal.DispatchTest do
       config = {:pid, [target: pid, delivery_mode: :async]}
       assert {:ok, task} = Dispatch.dispatch_async(signal, config)
 
-      assert {:error, %Jido.Signal.Error.DispatchError{}} = Task.await(task)
+      assert {:error, %DispatchError{}} = Task.await(task)
     end
 
     test "supports multiple async dispatches", %{signal: signal} do
@@ -361,11 +363,11 @@ defmodule Jido.Signal.DispatchTest do
   describe "dispatch_batch/3" do
     setup do
       signal = %Jido.Signal{
+        data: %{},
         id: "test_signal",
-        type: "test",
         source: "test",
         time: DateTime.utc_now(),
-        data: %{}
+        type: "test"
       }
 
       test_pid = self()
@@ -379,7 +381,7 @@ defmodule Jido.Signal.DispatchTest do
       {:ok, signal: signal, configs: configs}
     end
 
-    test "dispatches in batches with default options", %{signal: signal, configs: configs} do
+    test "dispatches in batches with default options", %{configs: configs, signal: signal} do
       assert :ok = Dispatch.dispatch_batch(signal, configs, [])
 
       # Collect all signals and verify order
@@ -396,7 +398,7 @@ defmodule Jido.Signal.DispatchTest do
       assert signals == Enum.to_list(1..100)
     end
 
-    test "respects batch size option", %{signal: signal, configs: configs} do
+    test "respects batch size option", %{configs: configs, signal: signal} do
       batch_size = 10
       test_pid = self()
 
@@ -454,7 +456,7 @@ defmodule Jido.Signal.DispatchTest do
         {TestBatchAdapter, [target: test_pid, index: 3]}
       ]
 
-      assert {:error, [{1, %Jido.Signal.Error.InvalidInputError{}}]} =
+      assert {:error, [{1, %InvalidInputError{}}]} =
                Dispatch.dispatch_batch(signal, configs, [])
 
       # Should still receive signals from successful dispatches
@@ -463,7 +465,7 @@ defmodule Jido.Signal.DispatchTest do
       refute_receive {:batch_signal, ^signal, 2}
     end
 
-    test "supports custom batch concurrency", %{signal: signal, configs: configs} do
+    test "supports custom batch concurrency", %{configs: configs, signal: signal} do
       batch_size = 10
       max_concurrency = 2
       test_pid = self()

@@ -46,22 +46,22 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
     setup do
       context = %{
         bus_name: :test_bus,
-        timestamp: DateTime.utc_now(),
-        metadata: %{}
+        metadata: %{},
+        timestamp: DateTime.utc_now()
       }
 
       signals = [
         %Signal{
+          data: %{message: "test message", value: 1},
           id: "signal-1",
-          type: "test.signal",
           source: "/test",
-          data: %{value: 1, message: "test message"}
+          type: "test.signal"
         },
         %Signal{
+          data: %{value: 2},
           id: "signal-2",
-          type: "another.signal",
           source: "/test",
-          data: %{value: 2}
+          type: "another.signal"
         }
       ]
 
@@ -113,10 +113,10 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
 
       signals = [
         %Signal{
+          data: long_data,
           id: "signal-1",
-          type: "test.signal",
           source: "/test",
-          data: long_data
+          type: "test.signal"
         }
       ]
 
@@ -150,12 +150,12 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
     setup do
       context = %{
         bus_name: :test_bus,
-        timestamp: DateTime.utc_now(),
-        metadata: %{}
+        metadata: %{},
+        timestamp: DateTime.utc_now()
       }
 
       signals = [
-        %Signal{id: "signal-1", type: "test.signal", source: "/test", data: %{}}
+        %Signal{data: %{}, id: "signal-1", source: "/test", type: "test.signal"}
       ]
 
       {:ok, context: context, signals: signals}
@@ -191,23 +191,23 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
     setup do
       context = %{
         bus_name: :test_bus,
-        timestamp: DateTime.utc_now(),
-        metadata: %{}
+        metadata: %{},
+        timestamp: DateTime.utc_now()
       }
 
       signal = %Signal{
+        data: %{value: 1},
         id: "signal-1",
-        type: "test.signal",
         source: "/test",
-        data: %{value: 1}
+        type: "test.signal"
       }
 
       subscriber = %Subscriber{
+        dispatch: {:pid, target: self(), delivery_mode: :async},
         id: "test-sub-id",
         path: "test.*",
-        dispatch: {:pid, target: self(), delivery_mode: :async},
-        persistent?: false,
-        persistence_pid: nil
+        persistence_pid: nil,
+        persistent?: false
       }
 
       {:ok, context: context, signal: signal, subscriber: subscriber}
@@ -258,23 +258,23 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
     setup do
       context = %{
         bus_name: :test_bus,
-        timestamp: DateTime.utc_now(),
-        metadata: %{}
+        metadata: %{},
+        timestamp: DateTime.utc_now()
       }
 
       signal = %Signal{
+        data: %{value: 1},
         id: "signal-1",
-        type: "test.signal",
         source: "/test",
-        data: %{value: 1}
+        type: "test.signal"
       }
 
       subscriber = %Subscriber{
+        dispatch: {:pid, target: self(), delivery_mode: :async},
         id: "test-sub-id",
         path: "test.*",
-        dispatch: {:pid, target: self(), delivery_mode: :async},
-        persistent?: false,
-        persistence_pid: nil
+        persistence_pid: nil,
+        persistent?: false
       }
 
       {:ok, context: context, signal: signal, subscriber: subscriber}
@@ -352,15 +352,15 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
     test "formats pid dispatch correctly" do
       {:ok, config} = LoggerMiddleware.init(level: :info, log_dispatch: true)
 
-      context = %{bus_name: :test_bus, timestamp: DateTime.utc_now(), metadata: %{}}
-      signal = %Signal{id: "signal-1", type: "test.signal", source: "/test", data: %{}}
+      context = %{bus_name: :test_bus, metadata: %{}, timestamp: DateTime.utc_now()}
+      signal = %Signal{data: %{}, id: "signal-1", source: "/test", type: "test.signal"}
 
       subscriber = %Subscriber{
+        dispatch: {:pid, target: self(), delivery_mode: :sync},
         id: "test-sub-id",
         path: "test.*",
-        dispatch: {:pid, target: self(), delivery_mode: :sync},
-        persistent?: false,
-        persistence_pid: nil
+        persistence_pid: nil,
+        persistent?: false
       }
 
       log =
@@ -374,15 +374,15 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
     test "formats function dispatch correctly" do
       {:ok, config} = LoggerMiddleware.init(level: :info, log_dispatch: true)
 
-      context = %{bus_name: :test_bus, timestamp: DateTime.utc_now(), metadata: %{}}
-      signal = %Signal{id: "signal-1", type: "test.signal", source: "/test", data: %{}}
+      context = %{bus_name: :test_bus, metadata: %{}, timestamp: DateTime.utc_now()}
+      signal = %Signal{data: %{}, id: "signal-1", source: "/test", type: "test.signal"}
 
       subscriber = %Subscriber{
+        dispatch: {:function, {MyModule, :my_function}},
         id: "test-sub-id",
         path: "test.*",
-        dispatch: {:function, {MyModule, :my_function}},
-        persistent?: false,
-        persistence_pid: nil
+        persistence_pid: nil,
+        persistent?: false
       }
 
       log =
@@ -396,12 +396,12 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
 
   describe "signal data formatting" do
     setup do
-      context = %{bus_name: :test_bus, timestamp: DateTime.utc_now(), metadata: %{}}
+      context = %{bus_name: :test_bus, metadata: %{}, timestamp: DateTime.utc_now()}
       {:ok, context: context}
     end
 
     test "handles nil data", %{context: context} do
-      signals = [%Signal{id: "signal-1", type: "test.signal", source: "/test", data: nil}]
+      signals = [%Signal{data: nil, id: "signal-1", source: "/test", type: "test.signal"}]
 
       {:ok, config} =
         LoggerMiddleware.init(level: :info, log_publish: true, include_signal_data: true)
@@ -416,7 +416,7 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
 
     test "handles binary data", %{context: context} do
       signals = [
-        %Signal{id: "signal-1", type: "test.signal", source: "/test", data: "binary data"}
+        %Signal{data: "binary data", id: "signal-1", source: "/test", type: "test.signal"}
       ]
 
       {:ok, config} =
@@ -433,10 +433,10 @@ defmodule JidoTest.Signal.Bus.Middleware.Logger do
     test "handles complex data structures", %{context: context} do
       signals = [
         %Signal{
+          data: %{nested: %{data: [1, 2, 3]}},
           id: "signal-1",
-          type: "test.signal",
           source: "/test",
-          data: %{nested: %{data: [1, 2, 3]}}
+          type: "test.signal"
         }
       ]
 

@@ -74,8 +74,8 @@ defmodule Jido.Signal.Error do
       @impl true
       def exception(opts) do
         %__MODULE__{
-          message: Keyword.get(opts, :message, "Unknown error"),
-          details: Keyword.get(opts, :details, %{})
+          details: Keyword.get(opts, :details, %{}),
+          message: Keyword.get(opts, :message, "Unknown error")
         }
       end
     end
@@ -91,10 +91,10 @@ defmodule Jido.Signal.Error do
       message = Keyword.get(opts, :message, "Invalid input")
 
       %__MODULE__{
-        message: message,
+        details: Keyword.get(opts, :details, %{}),
         field: Keyword.get(opts, :field),
-        value: Keyword.get(opts, :value),
-        details: Keyword.get(opts, :details, %{})
+        message: message,
+        value: Keyword.get(opts, :value)
       }
     end
   end
@@ -106,8 +106,8 @@ defmodule Jido.Signal.Error do
     @impl true
     def exception(opts) do
       %__MODULE__{
-        message: Keyword.get(opts, :message, "Signal processing failed"),
-        details: Keyword.get(opts, :details, %{})
+        details: Keyword.get(opts, :details, %{}),
+        message: Keyword.get(opts, :message, "Signal processing failed")
       }
     end
   end
@@ -119,9 +119,9 @@ defmodule Jido.Signal.Error do
     @impl true
     def exception(opts) do
       %__MODULE__{
+        details: Keyword.get(opts, :details, %{}),
         message: Keyword.get(opts, :message, "Signal routing failed"),
-        target: Keyword.get(opts, :target),
-        details: Keyword.get(opts, :details, %{})
+        target: Keyword.get(opts, :target)
       }
     end
   end
@@ -133,9 +133,9 @@ defmodule Jido.Signal.Error do
     @impl true
     def exception(opts) do
       %__MODULE__{
+        details: Keyword.get(opts, :details, %{}),
         message: Keyword.get(opts, :message, "Signal processing timed out"),
-        timeout: Keyword.get(opts, :timeout),
-        details: Keyword.get(opts, :details, %{})
+        timeout: Keyword.get(opts, :timeout)
       }
     end
   end
@@ -147,8 +147,8 @@ defmodule Jido.Signal.Error do
     @impl true
     def exception(opts) do
       %__MODULE__{
-        message: Keyword.get(opts, :message, "Signal dispatch failed"),
-        details: Keyword.get(opts, :details, %{})
+        details: Keyword.get(opts, :details, %{}),
+        message: Keyword.get(opts, :message, "Signal dispatch failed")
       }
     end
   end
@@ -160,8 +160,8 @@ defmodule Jido.Signal.Error do
     @impl true
     def exception(opts) do
       %__MODULE__{
-        message: Keyword.get(opts, :message, "Internal error"),
-        details: Keyword.get(opts, :details, %{})
+        details: Keyword.get(opts, :details, %{}),
+        message: Keyword.get(opts, :message, "Internal error")
       }
     end
   end
@@ -250,11 +250,7 @@ defmodule Jido.Signal.Error do
           module()
         ) ::
           String.t()
-  def format_nimble_config_error(
-        %NimbleOptions.ValidationError{keys_path: [], message: message},
-        module_type,
-        module
-      ) do
+  def format_nimble_config_error(%NimbleOptions.ValidationError{keys_path: [], message: message}, module_type, module) do
     "Invalid configuration given to use Jido.#{module_type} (#{module}): #{message}"
   end
 
@@ -305,8 +301,7 @@ defmodule Jido.Signal.Error do
     "Invalid parameters for #{module_type} (#{module}) at #{inspect(keys_path)}: #{message}"
   end
 
-  def format_nimble_validation_error(error, _module_type, _module) when is_binary(error),
-    do: error
+  def format_nimble_validation_error(error, _module_type, _module) when is_binary(error), do: error
 
   def format_nimble_validation_error(error, _module_type, _module), do: inspect(error)
 end

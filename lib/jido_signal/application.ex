@@ -7,6 +7,8 @@ defmodule Jido.Signal.Application do
   """
   use Application
 
+  alias Jido.Signal.TaskSupervisor
+
   @doc """
   Starts the Jido Signal application.
 
@@ -28,7 +30,7 @@ defmodule Jido.Signal.Application do
       {Registry, keys: :unique, name: Jido.Signal.Registry},
 
       # Exec Async Actions Task Supervisor
-      {Task.Supervisor, name: Jido.Signal.TaskSupervisor}
+      {Task.Supervisor, name: TaskSupervisor}
     ]
 
     opts = [strategy: :one_for_one, name: Jido.Signal.Supervisor]

@@ -13,11 +13,16 @@ defmodule Jido.Signal.Bus do
   use TypedStruct
 
   alias Jido.Signal.Bus.MiddlewarePipeline
+  alias Jido.Signal.Bus.RecordedSignal
   alias Jido.Signal.Bus.Snapshot
   alias Jido.Signal.Bus.State, as: BusState
   alias Jido.Signal.Bus.Stream
+  alias Jido.Signal.Bus.Subscriber
+  alias Jido.Signal.Dispatch
   alias Jido.Signal.Error
+  alias Jido.Signal.ID
   alias Jido.Signal.Router
+  alias Jido.Signal.Util
 
   require Logger
 
@@ -44,10 +49,10 @@ defmodule Jido.Signal.Bus do
 
     %{
       id: name,
-      start: {__MODULE__, :start_link, [opts]},
-      type: :worker,
       restart: :permanent,
-      shutdown: 5000
+      shutdown: 5000,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker
     }
   end
 
@@ -71,10 +76,10 @@ defmodule Jido.Signal.Bus do
     case MiddlewarePipeline.init_middleware(middleware_specs) do
       {:ok, middleware_configs} ->
         state = %BusState{
-          name: name,
-          router: Keyword.get(opts, :router, Router.new!()),
           child_supervisor: child_supervisor,
-          middleware: middleware_configs
+          middleware: middleware_configs,
+          name: name,
+          router: Keyword.get(opts, :router, Router.new!())
         }
 
         {:ok, state}
@@ -119,8 +124,8 @@ defmodule Jido.Signal.Bus do
     GenServer.start_link(__MODULE__, {name, opts}, name: via_tuple(name, opts))
   end
 
-  defdelegate via_tuple(name, opts \\ []), to: Jido.Signal.Util
-  defdelegate whereis(server, opts \\ []), to: Jido.Signal.Util
+  defdelegate via_tuple(name, opts \\ []), to: Util
+  defdelegate whereis(server, opts \\ []), to: Util
 
   @doc """
   Subscribes to signals matching the given path pattern.
@@ -172,7 +177,7 @@ defmodule Jido.Signal.Bus do
   Returns {:ok, recorded_signals} on success.
   """
   @spec publish(server(), [Jido.Signal.t()]) ::
-          {:ok, [Jido.Signal.Bus.RecordedSignal.t()]} | {:error, term()}
+          {:ok, [RecordedSignal.t()]} | {:error, term()}
   def publish(_bus, []) do
     {:ok, []}
   end
@@ -188,7 +193,7 @@ defmodule Jido.Signal.Bus do
   Optional start_timestamp to replay from a specific point in time.
   """
   @spec replay(server(), path(), non_neg_integer(), Keyword.t()) ::
-          {:ok, [Jido.Signal.Bus.RecordedSignal.t()]} | {:error, term()}
+          {:ok, [RecordedSignal.t()]} | {:error, term()}
   def replay(bus, path \\ "*", start_timestamp \\ 0, opts \\ []) do
     with {:ok, pid} <- whereis(bus) do
       GenServer.call(pid, {:replay, path, start_timestamp, opts})
@@ -258,17 +263,17 @@ defmodule Jido.Signal.Bus do
 
   @impl GenServer
   def handle_call({:subscribe, path, opts}, _from, state) do
-    subscription_id = Keyword.get(opts, :subscription_id, Jido.Signal.ID.generate!())
+    subscription_id = Keyword.get(opts, :subscription_id, ID.generate!())
     opts = Keyword.put(opts, :subscription_id, subscription_id)
 
-    case Jido.Signal.Bus.Subscriber.subscribe(state, subscription_id, path, opts) do
+    case Subscriber.subscribe(state, subscription_id, path, opts) do
       {:ok, new_state} -> {:reply, {:ok, subscription_id}, new_state}
       {:error, error} -> {:reply, {:error, error}, state}
     end
   end
 
   def handle_call({:unsubscribe, subscription_id, opts}, _from, state) do
-    case Jido.Signal.Bus.Subscriber.unsubscribe(state, subscription_id, opts) do
+    case Subscriber.unsubscribe(state, subscription_id, opts) do
       {:ok, new_state} -> {:reply, :ok, new_state}
       {:error, error} -> {:reply, {:error, error}, state}
     end
@@ -277,8 +282,8 @@ defmodule Jido.Signal.Bus do
   def handle_call({:publish, signals}, _from, state) do
     context = %{
       bus_name: state.name,
-      timestamp: DateTime.utc_now(),
-      metadata: %{}
+      metadata: %{},
+      timestamp: DateTime.utc_now()
     }
 
     # Run before_publish middleware
@@ -295,11 +300,11 @@ defmodule Jido.Signal.Bus do
               processed_signals
               |> Enum.map(fn signal ->
                 # Create a RecordedSignal struct for each signal
-                %Jido.Signal.Bus.RecordedSignal{
-                  id: signal.id,
-                  type: signal.type,
+                %RecordedSignal{
                   created_at: DateTime.utc_now(),
-                  signal: signal
+                  id: signal.id,
+                  signal: signal,
+                  type: signal.type
                 }
               end)
 
@@ -464,7 +469,7 @@ defmodule Jido.Signal.Bus do
                  ) do
               {:ok, processed_signal} ->
                 # Dispatch the potentially modified signal
-                result = Jido.Signal.Dispatch.dispatch(processed_signal, subscription.dispatch)
+                result = Dispatch.dispatch(processed_signal, subscription.dispatch)
 
                 # Run after_dispatch middleware
                 MiddlewarePipeline.after_dispatch(
@@ -480,9 +485,7 @@ defmodule Jido.Signal.Bus do
                 :ok
 
               {:error, reason} ->
-                Logger.warning(
-                  "Middleware halted dispatch for signal #{signal.id}: #{inspect(reason)}"
-                )
+                Logger.warning("Middleware halted dispatch for signal #{signal.id}: #{inspect(reason)}")
             end
           end
         end)

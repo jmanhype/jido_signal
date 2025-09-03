@@ -9,7 +9,10 @@ defmodule Jido.Signal.Bus.Stream do
   """
 
   alias Jido.Signal
+  alias Jido.Signal.Bus.RecordedSignal
   alias Jido.Signal.Bus.State, as: BusState
+  alias Jido.Signal.Dispatch
+  alias Jido.Signal.ID
   alias Jido.Signal.Router
 
   require Logger
@@ -19,7 +22,7 @@ defmodule Jido.Signal.Bus.Stream do
   The type pattern is used for matching against the signal's type field.
   """
   @spec filter(BusState.t(), String.t(), integer() | nil, keyword()) ::
-          {:ok, list(Jido.Signal.Bus.RecordedSignal.t())} | {:error, atom()}
+          {:ok, list(RecordedSignal.t())} | {:error, atom()}
   def filter(%BusState{} = state, type_pattern, start_timestamp \\ nil, opts \\ []) do
     batch_size = Keyword.get(opts, :batch_size, 1_000)
     correlation_id = Keyword.get(opts, :correlation_id)
@@ -37,7 +40,7 @@ defmodule Jido.Signal.Bus.Stream do
             # Fall back to created_at if ID timestamp extraction fails
             signal_ts =
               try do
-                ts = Jido.Signal.ID.extract_timestamp(signal.id)
+                ts = ID.extract_timestamp(signal.id)
 
                 ts
               rescue
@@ -82,11 +85,11 @@ defmodule Jido.Signal.Bus.Stream do
           |> Enum.take(batch_size)
           |> Enum.map(fn signal ->
             # Convert to RecordedSignal struct
-            %Jido.Signal.Bus.RecordedSignal{
-              id: signal.id,
-              type: signal.type,
+            %RecordedSignal{
               created_at: DateTime.utc_now(),
-              signal: signal
+              id: signal.id,
+              signal: signal,
+              type: signal.type
             }
           end)
 
@@ -121,7 +124,7 @@ defmodule Jido.Signal.Bus.Stream do
           Enum.each(new_state.subscriptions, fn {_id, subscription} ->
             if Router.matches?(signal.type, subscription.path) do
               # If it matches, dispatch the signal
-              Jido.Signal.Dispatch.dispatch(signal, subscription.dispatch)
+              Dispatch.dispatch(signal, subscription.dispatch)
             end
           end)
         end)

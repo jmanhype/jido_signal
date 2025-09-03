@@ -9,9 +9,11 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
   use GenServer
   use TypedStruct
 
+  alias Jido.Signal.Bus
   alias Jido.Signal.Bus.Subscriber
   alias Jido.Signal.Dispatch
   alias Jido.Signal.ID
+  alias Jido.Signal.Util
 
   require Logger
 
@@ -43,7 +45,7 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
   - dispatch_opts: Additional dispatch options for the subscription
   """
   def start_link(opts) do
-    id = Jido.Signal.ID.generate!()
+    id = ID.generate!()
     opts = Keyword.put(opts, :id, id)
 
     # Validate start_from value and set default if invalid
@@ -65,8 +67,8 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
     GenServer.start_link(__MODULE__, opts, name: via_tuple(id))
   end
 
-  defdelegate via_tuple(id), to: Jido.Signal.Util
-  defdelegate whereis(id), to: Jido.Signal.Util
+  defdelegate via_tuple(id), to: Util
+  defdelegate whereis(id), to: Util
 
   @impl GenServer
   def init(opts) do
@@ -106,7 +108,7 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
     new_checkpoint = max(state.checkpoint, timestamp)
 
     # Update state
-    new_state = %{state | in_flight_signals: new_in_flight, checkpoint: new_checkpoint}
+    new_state = %{state | checkpoint: new_checkpoint, in_flight_signals: new_in_flight}
 
     # Process any pending signals
     new_state = process_pending_signals(new_state)
@@ -132,7 +134,7 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
     new_checkpoint = max(state.checkpoint, highest_timestamp)
 
     # Update state
-    new_state = %{state | in_flight_signals: new_in_flight, checkpoint: new_checkpoint}
+    new_state = %{state | checkpoint: new_checkpoint, in_flight_signals: new_in_flight}
 
     # Process any pending signals
     new_state = process_pending_signals(new_state)
@@ -189,7 +191,7 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
     new_checkpoint = max(state.checkpoint, timestamp)
 
     # Update state
-    new_state = %{state | in_flight_signals: new_in_flight, checkpoint: new_checkpoint}
+    new_state = %{state | checkpoint: new_checkpoint, in_flight_signals: new_in_flight}
 
     # Process any pending signals
     new_state = process_pending_signals(new_state)
@@ -211,7 +213,7 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
       }
 
       # Update state with new client PID and subscription
-      new_state = %{state | client_pid: new_client_pid, bus_subscription: updated_subscription}
+      new_state = %{state | bus_subscription: updated_subscription, client_pid: new_client_pid}
 
       # Replay any signals that were missed while disconnected
       new_state = replay_missed_signals(new_state)
@@ -250,8 +252,7 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
   end
 
   @impl GenServer
-  def handle_info({:DOWN, _ref, :process, pid, _reason}, %{client_pid: client_pid} = state)
-      when pid == client_pid do
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, %{client_pid: client_pid} = state) when pid == client_pid do
     # Client disconnected, but we keep the subscription alive
     # The client can reconnect later using the reconnect/2 function
     {:noreply, state}
@@ -288,9 +289,7 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
                   :ok
 
                 {:error, reason} ->
-                  Logger.debug(
-                    "Dispatch failed during replay, signal: #{inspect(signal)}, reason: #{inspect(reason)}"
-                  )
+                  Logger.debug("Dispatch failed during replay, signal: #{inspect(signal)}, reason: #{inspect(reason)}")
               end
             end
           end
@@ -308,7 +307,7 @@ defmodule Jido.Signal.Bus.PersistentSubscription do
     # Use state.id as the subscription_id since that's what we're using to identify the subscription
     if state.bus_pid do
       # Best effort to unsubscribe
-      Jido.Signal.Bus.unsubscribe(state.bus_pid, state.id)
+      Bus.unsubscribe(state.bus_pid, state.id)
     end
 
     :ok

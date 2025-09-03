@@ -50,6 +50,8 @@ defmodule Jido.Signal.Dispatch.PidAdapter do
 
   @behaviour Jido.Signal.Dispatch.Adapter
 
+  alias Jido.Signal.Dispatch.Adapter
+
   @type delivery_target :: pid()
   @type delivery_mode :: :sync | :async
   @type message_format :: (Jido.Signal.t() -> term())
@@ -64,7 +66,7 @@ defmodule Jido.Signal.Dispatch.PidAdapter do
           | :timeout
           | term()
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Validates the PID adapter configuration options.
 
@@ -102,7 +104,7 @@ defmodule Jido.Signal.Dispatch.PidAdapter do
   defp validate_mode(mode) when mode in [:sync, :async], do: {:ok, mode}
   defp validate_mode(_), do: {:error, :invalid_delivery_mode}
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Delivers a signal to the target process.
 

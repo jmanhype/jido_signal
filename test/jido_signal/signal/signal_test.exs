@@ -39,10 +39,10 @@ defmodule JidoTest.SignalTest do
   describe "from_map/1" do
     test "creates a valid Signal struct with required fields" do
       map = %{
-        "specversion" => "1.0.2",
-        "type" => "example.event",
+        "id" => "123",
         "source" => "/example",
-        "id" => "123"
+        "specversion" => "1.0.2",
+        "type" => "example.event"
       }
 
       assert {:ok, signal} = Signal.from_map(map)
@@ -55,15 +55,15 @@ defmodule JidoTest.SignalTest do
 
     test "creates a valid Signal struct with all fields" do
       map = %{
-        "specversion" => "1.0.2",
-        "type" => "example.event",
-        "source" => "/example",
-        "id" => "123",
-        "subject" => "test_subject",
-        "time" => "2023-05-20T12:00:00Z",
+        "data" => %{"key" => "value"},
         "datacontenttype" => "application/json",
         "dataschema" => "https://example.com/schema",
-        "data" => %{"key" => "value"}
+        "id" => "123",
+        "source" => "/example",
+        "specversion" => "1.0.2",
+        "subject" => "test_subject",
+        "time" => "2023-05-20T12:00:00Z",
+        "type" => "example.event"
       }
 
       assert {:ok, signal} = Signal.from_map(map)
@@ -77,10 +77,10 @@ defmodule JidoTest.SignalTest do
 
     test "returns error for invalid specversion" do
       map = %{
-        "specversion" => "1.0",
-        "type" => "example.event",
+        "id" => "123",
         "source" => "/example",
-        "id" => "123"
+        "specversion" => "1.0",
+        "type" => "example.event"
       }
 
       assert {:error, "parse error: unexpected specversion 1.0"} = Signal.from_map(map)
@@ -93,14 +93,14 @@ defmodule JidoTest.SignalTest do
 
     test "handles empty optional fields" do
       map = %{
-        "specversion" => "1.0.2",
-        "type" => "example.event",
-        "source" => "/example",
+        "datacontenttype" => "",
+        "dataschema" => "",
         "id" => "123",
+        "source" => "/example",
+        "specversion" => "1.0.2",
         "subject" => "",
         "time" => "",
-        "datacontenttype" => "",
-        "dataschema" => ""
+        "type" => "example.event"
       }
 
       assert {:error, _} = Signal.from_map(map)
@@ -108,11 +108,11 @@ defmodule JidoTest.SignalTest do
 
     test "sets default datacontenttype for non-nil data" do
       map = %{
-        "specversion" => "1.0.2",
-        "type" => "example.event",
-        "source" => "/example",
+        "data" => %{"key" => "value"},
         "id" => "123",
-        "data" => %{"key" => "value"}
+        "source" => "/example",
+        "specversion" => "1.0.2",
+        "type" => "example.event"
       }
 
       assert {:ok, signal} = Signal.from_map(map)

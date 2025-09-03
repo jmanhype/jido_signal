@@ -4,6 +4,7 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
   import ExUnit.CaptureIO
 
   alias Jido.Signal
+  alias Jido.Signal.Dispatch.Adapter
   alias Jido.Signal.Dispatch.ConsoleAdapter
 
   @moduletag :capture_log
@@ -14,7 +15,7 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
       assert function_exported?(ConsoleAdapter, :deliver, 2)
 
       behaviours = ConsoleAdapter.__info__(:attributes)[:behaviour] || []
-      assert Jido.Signal.Dispatch.Adapter in behaviours
+      assert Adapter in behaviours
     end
   end
 
@@ -53,9 +54,9 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
     setup do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{message: "test message", value: 42},
           source: "/test/source",
-          data: %{message: "test message", value: 42}
+          type: "test.signal"
         })
 
       {:ok, signal: signal}
@@ -99,9 +100,9 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
     test "prints signal with empty data", %{} do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{},
           source: "/test/source",
-          data: %{}
+          type: "test.signal"
         })
 
       output =
@@ -114,21 +115,21 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
 
     test "prints signal with complex nested data", %{} do
       complex_data = %{
+        metadata: %{
+          priority: :high,
+          tags: ["important", "urgent"]
+        },
         user: %{
           id: 123,
-          profile: %{name: "John Doe", age: 30}
-        },
-        metadata: %{
-          tags: ["important", "urgent"],
-          priority: :high
+          profile: %{age: 30, name: "John Doe"}
         }
       }
 
       {:ok, signal} =
         Signal.new(%{
-          type: "user.profile.updated",
+          data: complex_data,
           source: "/user/service",
-          data: complex_data
+          type: "user.profile.updated"
         })
 
       output =
@@ -177,17 +178,17 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
 
     test "handles signal with special characters in data", %{} do
       special_data = %{
-        unicode: "Hello 世界! 🚀",
+        newlines: "Line 1\nLine 2\nLine 3",
         quotes: "String with \"quotes\" and 'apostrophes'",
         symbols: "!@#$%^&*()_+-={}[]|\\:;\"'<>?,./",
-        newlines: "Line 1\nLine 2\nLine 3"
+        unicode: "Hello 世界! 🚀"
       }
 
       {:ok, signal} =
         Signal.new(%{
-          type: "special.characters",
+          data: special_data,
           source: "/test",
-          data: special_data
+          type: "special.characters"
         })
 
       output =
@@ -219,8 +220,8 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
     end
 
     test "multiple signals produce separate outputs", %{} do
-      {:ok, signal1} = Signal.new(%{type: "first", source: "/test", data: %{id: 1}})
-      {:ok, signal2} = Signal.new(%{type: "second", source: "/test", data: %{id: 2}})
+      {:ok, signal1} = Signal.new(%{data: %{id: 1}, source: "/test", type: "first"})
+      {:ok, signal2} = Signal.new(%{data: %{id: 2}, source: "/test", type: "second"})
 
       output =
         capture_io(fn ->
@@ -249,7 +250,7 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
   describe "integration with other components" do
     test "works with Signal.new validation", %{} do
       # Test with minimum required fields
-      {:ok, signal} = Signal.new(%{type: "minimal", source: "/test"})
+      {:ok, signal} = Signal.new(%{source: "/test", type: "minimal"})
 
       output =
         capture_io(fn ->
@@ -262,11 +263,11 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
 
     test "handles all valid signal types", %{} do
       signal_configs = [
-        %{type: "simple", source: "/test"},
-        %{type: "with.dots", source: "/complex/path"},
-        %{type: "user:action", source: "service"},
-        %{type: "UPPERCASE", source: "/TEST"},
-        %{type: "with_underscores", source: "/test_path"}
+        %{source: "/test", type: "simple"},
+        %{source: "/complex/path", type: "with.dots"},
+        %{source: "service", type: "user:action"},
+        %{source: "/TEST", type: "UPPERCASE"},
+        %{source: "/test_path", type: "with_underscores"}
       ]
 
       for config <- signal_configs do
@@ -288,16 +289,16 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
       long_string = String.duplicate("x", 1000)
 
       long_data = %{
-        long_field: long_string,
         list: Enum.to_list(1..100),
+        long_field: long_string,
         nested: %{deep: %{very: %{deep: %{data: "here"}}}}
       }
 
       {:ok, signal} =
         Signal.new(%{
-          type: "large.data",
+          data: long_data,
           source: "/test",
-          data: long_data
+          type: "large.data"
         })
 
       output =
@@ -312,7 +313,7 @@ defmodule JidoTest.Signal.Dispatch.ConsoleAdapterTest do
     end
 
     test "concurrent deliveries work correctly", %{} do
-      {:ok, signal} = Signal.new(%{type: "concurrent", source: "/test", data: %{id: "test"}})
+      {:ok, signal} = Signal.new(%{data: %{id: "test"}, source: "/test", type: "concurrent"})
 
       # Run multiple deliveries concurrently
       tasks =

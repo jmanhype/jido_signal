@@ -11,16 +11,20 @@ defmodule Jido.Signal.Bus.State do
   use TypedStruct
 
   alias Jido.Signal
+  alias Jido.Signal.Bus.MiddlewarePipeline
+  alias Jido.Signal.Bus.Snapshot.SnapshotRef
+  alias Jido.Signal.Bus.Subscriber
+  alias Jido.Signal.ID
   alias Jido.Signal.Router
 
   typedstruct do
     field(:name, atom(), enforce: true)
     field(:router, Router.Router.t(), default: Router.new!())
     field(:log, %{String.t() => Signal.t()}, default: %{})
-    field(:snapshots, %{String.t() => Jido.Signal.Bus.Snapshot.SnapshotRef.t()}, default: %{})
-    field(:subscriptions, %{String.t() => Jido.Signal.Bus.Subscriber.t()}, default: %{})
+    field(:snapshots, %{String.t() => SnapshotRef.t()}, default: %{})
+    field(:subscriptions, %{String.t() => Subscriber.t()}, default: %{})
     field(:child_supervisor, pid())
-    field(:middleware, [Jido.Signal.Bus.MiddlewarePipeline.middleware_config()], default: [])
+    field(:middleware, [MiddlewarePipeline.middleware_config()], default: [])
   end
 
   @doc """
@@ -43,7 +47,7 @@ defmodule Jido.Signal.Bus.State do
       {:ok, state, []}
     else
       try do
-        {uuids, _timestamp} = Jido.Signal.ID.generate_batch(length(signals))
+        {uuids, _timestamp} = ID.generate_batch(length(signals))
 
         new_log =
           uuids
@@ -218,7 +222,7 @@ defmodule Jido.Signal.Bus.State do
 
   The subscription struct if found, `nil` otherwise
   """
-  @spec get_subscription(t(), String.t()) :: Jido.Signal.Bus.Subscriber.t() | nil
+  @spec get_subscription(t(), String.t()) :: Subscriber.t() | nil
   def get_subscription(%__MODULE__{} = state, subscription_id) do
     Map.get(state.subscriptions, subscription_id)
   end
@@ -237,7 +241,7 @@ defmodule Jido.Signal.Bus.State do
   - `{:ok, new_state}` if successful
   - `{:error, :subscription_exists}` if a subscription with this ID already exists
   """
-  @spec add_subscription(t(), String.t(), Jido.Signal.Bus.Subscriber.t()) ::
+  @spec add_subscription(t(), String.t(), Subscriber.t()) ::
           {:ok, t()} | {:error, atom()}
   def add_subscription(%__MODULE__{} = state, subscription_id, subscription) do
     if has_subscription?(state, subscription_id) do
@@ -282,7 +286,7 @@ defmodule Jido.Signal.Bus.State do
     end
   end
 
-  @spec subscription_to_route(Jido.Signal.Bus.Subscriber.t()) :: Router.Route.t()
+  @spec subscription_to_route(Subscriber.t()) :: Router.Route.t()
   defp subscription_to_route(subscription) do
     %Router.Route{
       # Use the path pattern for matching

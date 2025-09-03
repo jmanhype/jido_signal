@@ -62,8 +62,8 @@ defmodule Jido.Signal.Dispatch.HttpTest do
                Http.validate_opts(
                  url: "https://example.com",
                  retry: %{
-                   max_attempts: 3,
                    base_delay: 1000,
+                   max_attempts: 3,
                    max_delay: 5000
                  }
                )
@@ -72,8 +72,8 @@ defmodule Jido.Signal.Dispatch.HttpTest do
                Http.validate_opts(
                  url: "https://example.com",
                  retry: %{
+                   base_delay: 1000,
                    max_attempts: 0,
-                   base_delay: 1000,
                    max_delay: 5000
                  }
                )
@@ -82,8 +82,8 @@ defmodule Jido.Signal.Dispatch.HttpTest do
                Http.validate_opts(
                  url: "https://example.com",
                  retry: %{
-                   max_attempts: 3,
                    base_delay: -1,
+                   max_attempts: 3,
                    max_delay: 5000
                  }
                )
@@ -92,8 +92,8 @@ defmodule Jido.Signal.Dispatch.HttpTest do
                Http.validate_opts(
                  url: "https://example.com",
                  retry: %{
-                   max_attempts: 3,
                    base_delay: 1000,
+                   max_attempts: 3,
                    max_delay: 0
                  }
                )
@@ -109,11 +109,11 @@ defmodule Jido.Signal.Dispatch.HttpTest do
   describe "deliver/2" do
     setup do
       signal = %Jido.Signal{
+        data: %{value: 42},
         id: "test_signal",
-        type: "test",
         source: "test",
         time: DateTime.utc_now(),
-        data: %{value: 42}
+        type: "test"
       }
 
       {:ok, signal: signal}
@@ -129,8 +129,8 @@ defmodule Jido.Signal.Dispatch.HttpTest do
         headers: [],
         timeout: 5000,
         retry: %{
-          max_attempts: 1,
           base_delay: 0,
+          max_attempts: 1,
           max_delay: 0
         }
       ]
@@ -146,8 +146,8 @@ defmodule Jido.Signal.Dispatch.HttpTest do
         headers: [],
         timeout: 1,
         retry: %{
-          max_attempts: 1,
           base_delay: 0,
+          max_attempts: 1,
           max_delay: 0
         }
       ]
@@ -163,8 +163,8 @@ defmodule Jido.Signal.Dispatch.HttpTest do
         headers: [],
         timeout: 1,
         retry: %{
-          max_attempts: 3,
           base_delay: 1,
+          max_attempts: 3,
           max_delay: 5
         }
       ]

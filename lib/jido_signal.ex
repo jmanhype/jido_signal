@@ -142,6 +142,7 @@ defmodule Jido.Signal do
 
   alias Jido.Signal.Dispatch
   alias Jido.Signal.ID
+  alias Jido.Signal.Serialization.Serializer
   alias Jido.Signal.Serialization.TypeProvider
 
   @signal_config_schema NimbleOptions.new!(
@@ -168,8 +169,7 @@ defmodule Jido.Signal do
                           schema: [
                             type: :keyword_list,
                             default: [],
-                            doc:
-                              "A NimbleOptions schema for validating the Signal's data parameters"
+                            doc: "A NimbleOptions schema for validating the Signal's data parameters"
                           ]
                         )
 
@@ -228,6 +228,7 @@ defmodule Jido.Signal do
 
     quote location: :keep do
       alias Jido.Signal
+      alias Jido.Signal.Error
       alias Jido.Signal.ID
 
       case NimbleOptions.validate(unquote(opts), unquote(escaped_schema)) do
@@ -242,11 +243,11 @@ defmodule Jido.Signal do
 
           def to_json do
             %{
-              type: @validated_opts[:type],
-              default_source: @validated_opts[:default_source],
               datacontenttype: @validated_opts[:datacontenttype],
               dataschema: @validated_opts[:dataschema],
-              schema: @validated_opts[:schema]
+              default_source: @validated_opts[:default_source],
+              schema: @validated_opts[:schema],
+              type: @validated_opts[:type]
             }
           end
 
@@ -335,7 +336,7 @@ defmodule Jido.Signal do
 
                   {:error, %NimbleOptions.ValidationError{} = error} ->
                     reason =
-                      Jido.Signal.Error.format_nimble_validation_error(
+                      Error.format_nimble_validation_error(
                         error,
                         "Signal",
                         __MODULE__
@@ -348,7 +349,8 @@ defmodule Jido.Signal do
 
           defp build_signal_attrs(validated_data, opts) do
             caller =
-              Process.info(self(), :current_stacktrace)
+              self()
+              |> Process.info(:current_stacktrace)
               |> elem(1)
               |> Enum.find(fn {mod, _fun, _arity, _info} ->
                 mod_str = to_string(mod)
@@ -358,12 +360,12 @@ defmodule Jido.Signal do
               |> to_string()
 
             attrs = %{
-              "type" => @validated_opts[:type],
-              "source" => @validated_opts[:default_source] || caller,
               "data" => validated_data,
               "id" => ID.generate!(),
+              "source" => @validated_opts[:default_source] || caller,
+              "specversion" => "1.0.2",
               "time" => DateTime.utc_now() |> DateTime.to_iso8601(),
-              "specversion" => "1.0.2"
+              "type" => @validated_opts[:type]
             }
 
             attrs =
@@ -386,7 +388,7 @@ defmodule Jido.Signal do
           end
 
         {:error, error} ->
-          message = Jido.Signal.Error.format_nimble_config_error(error, "Signal", __MODULE__)
+          message = Error.format_nimble_config_error(error, "Signal", __MODULE__)
           raise CompileError, description: message, file: __ENV__.file, line: __ENV__.line
       end
     end
@@ -451,7 +453,8 @@ defmodule Jido.Signal do
 
   def new(attrs) when is_map(attrs) do
     caller =
-      Process.info(self(), :current_stacktrace)
+      self()
+      |> Process.info(:current_stacktrace)
       |> elem(1)
       |> Enum.find(fn {mod, _fun, _arity, _info} ->
         mod_str = to_string(mod)
@@ -461,10 +464,10 @@ defmodule Jido.Signal do
       |> to_string()
 
     defaults = %{
-      "specversion" => "1.0.2",
       "id" => ID.generate!(),
-      "time" => DateTime.utc_now() |> DateTime.to_iso8601(),
-      "source" => caller
+      "source" => caller,
+      "specversion" => "1.0.2",
+      "time" => DateTime.utc_now() |> DateTime.to_iso8601()
     }
 
     attrs
@@ -503,16 +506,16 @@ defmodule Jido.Signal do
          {:ok, data} <- parse_data(map["data"]),
          {:ok, jido_dispatch} <- parse_jido_dispatch(map["jido_dispatch"]) do
       event = %__MODULE__{
-        specversion: "1.0.2",
-        type: type,
-        source: source,
-        id: id,
-        subject: subject,
-        time: time,
+        data: data,
         datacontenttype: datacontenttype || if(data, do: "application/json"),
         dataschema: dataschema,
-        data: data,
-        jido_dispatch: jido_dispatch
+        id: id,
+        jido_dispatch: jido_dispatch,
+        source: source,
+        specversion: "1.0.2",
+        subject: subject,
+        time: time,
+        type: type
       }
 
       {:ok, event}
@@ -560,10 +563,10 @@ defmodule Jido.Signal do
   @spec map_to_signal_data(struct, Keyword.t()) :: t()
   def map_to_signal_data(signal, _fields) do
     %__MODULE__{
+      data: signal,
       id: ID.generate(),
       source: "http://example.com/bank",
-      type: TypeProvider.to_string(signal),
-      data: signal
+      type: TypeProvider.to_string(signal)
     }
   end
 
@@ -600,8 +603,7 @@ defmodule Jido.Signal do
   @spec parse_datacontenttype(map()) :: {:ok, String.t() | nil} | {:error, String.t()}
   defp parse_datacontenttype(%{"datacontenttype" => ct}) when byte_size(ct) > 0, do: {:ok, ct}
 
-  defp parse_datacontenttype(%{"datacontenttype" => ""}),
-    do: {:error, "datacontenttype given but empty"}
+  defp parse_datacontenttype(%{"datacontenttype" => ""}), do: {:error, "datacontenttype given but empty"}
 
   defp parse_datacontenttype(_), do: {:ok, nil}
 
@@ -665,11 +667,11 @@ defmodule Jido.Signal do
   def serialize(signal_or_list, opts \\ [])
 
   def serialize(%__MODULE__{} = signal, opts) do
-    Jido.Signal.Serialization.Serializer.serialize(signal, opts)
+    Serializer.serialize(signal, opts)
   end
 
   def serialize(signals, opts) when is_list(signals) do
-    Jido.Signal.Serialization.Serializer.serialize(signals, opts)
+    Serializer.serialize(signals, opts)
   end
 
   @doc """
@@ -719,7 +721,7 @@ defmodule Jido.Signal do
   """
   @spec deserialize(binary(), keyword()) :: {:ok, t() | list(t())} | {:error, term()}
   def deserialize(binary, opts \\ []) when is_binary(binary) do
-    case Jido.Signal.Serialization.Serializer.deserialize(binary, opts) do
+    case Serializer.deserialize(binary, opts) do
       {:ok, data} ->
         result =
           if is_list(data) do

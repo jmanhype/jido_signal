@@ -82,11 +82,11 @@ defmodule Jido.Signal.Dispatch.WebhookTest do
   describe "deliver/2" do
     setup do
       signal = %Jido.Signal{
+        data: %{value: 42},
         id: "test_signal",
-        type: "test.event",
         source: "test",
         time: DateTime.utc_now(),
-        data: %{value: 42}
+        type: "test.event"
       }
 
       {:ok, signal: signal}
@@ -98,7 +98,7 @@ defmodule Jido.Signal.Dispatch.WebhookTest do
         secret: "test_secret",
         method: :post,
         timeout: 1,
-        retry: %{max_attempts: 1, base_delay: 0, max_delay: 0}
+        retry: %{base_delay: 0, max_attempts: 1, max_delay: 0}
       ]
 
       # We'll get an error because the URL isn't real, but we can inspect the headers
@@ -117,7 +117,7 @@ defmodule Jido.Signal.Dispatch.WebhookTest do
         },
         method: :post,
         timeout: 1,
-        retry: %{max_attempts: 1, base_delay: 0, max_delay: 0}
+        retry: %{base_delay: 0, max_attempts: 1, max_delay: 0}
       ]
 
       # We'll get an error because the URL isn't real, but the mapping should occur
@@ -133,7 +133,7 @@ defmodule Jido.Signal.Dispatch.WebhookTest do
         url: "https://example.com",
         method: :post,
         timeout: 1,
-        retry: %{max_attempts: 1, base_delay: 0, max_delay: 0}
+        retry: %{base_delay: 0, max_attempts: 1, max_delay: 0}
       ]
 
       {:error, _} = result = Webhook.deliver(signal, opts)
@@ -146,7 +146,7 @@ defmodule Jido.Signal.Dispatch.WebhookTest do
         method: :post,
         headers: [{"x-custom", "value"}],
         timeout: 1,
-        retry: %{max_attempts: 1, base_delay: 0, max_delay: 0}
+        retry: %{base_delay: 0, max_attempts: 1, max_delay: 0}
       ]
 
       {:error, _} = result = Webhook.deliver(signal, opts)

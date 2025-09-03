@@ -26,8 +26,8 @@ defmodule Jido.Signal.Bus.Middleware do
   @type middleware_state :: term()
   @type context :: %{
           bus_name: atom(),
-          timestamp: DateTime.t(),
-          metadata: map()
+          metadata: map(),
+          timestamp: DateTime.t()
         }
   @type dispatch_result :: :ok | {:error, term()}
 

@@ -33,9 +33,7 @@ defmodule Jido.Signal.BusE2ETest do
 
     @impl true
     def init(opts) do
-      Logger.debug(
-        "TestClient #{Keyword.fetch!(opts, :id)} initialized with name: #{Keyword.get(opts, :name)}"
-      )
+      Logger.debug("TestClient #{Keyword.fetch!(opts, :id)} initialized with name: #{Keyword.get(opts, :name)}")
 
       {:ok,
        %{
@@ -47,9 +45,7 @@ defmodule Jido.Signal.BusE2ETest do
 
     @impl true
     def handle_call(:get_signals, _from, state) do
-      Logger.debug(
-        "TestClient #{state.id} (#{state.name}) returning #{length(state.signals)} signals"
-      )
+      Logger.debug("TestClient #{state.id} (#{state.name}) returning #{length(state.signals)} signals")
 
       {:reply, state.signals, state}
     end
@@ -97,29 +93,29 @@ defmodule Jido.Signal.BusE2ETest do
 
     # Create subscription patterns
     subscription_patterns = [
-      %{id: "all_signals", path: "**", description: "Receives all signals", persistent?: true},
+      %{description: "Receives all signals", id: "all_signals", path: "**", persistent?: true},
       %{
+        description: "Receives only system signals",
         id: "system_signals",
         path: "system.*",
-        description: "Receives only system signals",
         persistent?: true
       },
       %{
+        description: "Receives only user signals",
         id: "user_signals",
         path: "user.*",
-        description: "Receives only user signals",
         persistent?: true
       },
       %{
+        description: "Receives only data signals",
         id: "data_signals",
         path: "data.*",
-        description: "Receives only data signals",
         persistent?: false
       },
       %{
+        description: "Receives only notification signals",
         id: "notification_signals",
         path: "notification.*",
-        description: "Receives only notification signals",
         persistent?: true
       }
     ]
@@ -162,14 +158,14 @@ defmodule Jido.Signal.BusE2ETest do
 
         # Create a subscriber struct for tracking
         %{
-          id: pattern.id,
-          description: pattern.description,
-          path: pattern.path,
-          subscription_id: subscription_id,
-          client_pid: client_pid,
           client_name: client_name,
+          client_pid: client_pid,
+          description: pattern.description,
+          disconnected: false,
+          id: pattern.id,
+          path: pattern.path,
           signals_received: [],
-          disconnected: false
+          subscription_id: subscription_id
         }
       end)
 
@@ -182,9 +178,9 @@ defmodule Jido.Signal.BusE2ETest do
         Enum.map(signal_types, fn type ->
           {:ok, signal} =
             Signal.new(%{
-              type: type,
+              data: %{batch: batch, value: :rand.uniform(100)},
               source: "/e2e_test",
-              data: %{batch: batch, value: :rand.uniform(100)}
+              type: type
             })
 
           signal
@@ -218,9 +214,7 @@ defmodule Jido.Signal.BusE2ETest do
     Enum.each(subscribers, fn subscriber ->
       case subscriber.id do
         "all_signals" ->
-          Logger.debug(
-            "All signals subscriber received #{length(subscriber.signals_received)} signals"
-          )
+          Logger.debug("All signals subscriber received #{length(subscriber.signals_received)} signals")
 
           assert length(subscriber.signals_received) == 50,
                  "All signals subscriber should receive all 50 signals"
@@ -231,9 +225,7 @@ defmodule Jido.Signal.BusE2ETest do
               String.starts_with?(signal.type, "system.")
             end)
 
-          Logger.debug(
-            "System signals subscriber received #{length(system_signals)} system signals"
-          )
+          Logger.debug("System signals subscriber received #{length(system_signals)} system signals")
 
           assert length(system_signals) == 10,
                  "System signals subscriber should receive 10 system signals"
@@ -266,9 +258,7 @@ defmodule Jido.Signal.BusE2ETest do
               String.starts_with?(signal.type, "notification.")
             end)
 
-          Logger.debug(
-            "Notification signals subscriber received #{length(notification_signals)} notification signals"
-          )
+          Logger.debug("Notification signals subscriber received #{length(notification_signals)} notification signals")
 
           assert length(notification_signals) == 15,
                  "Notification signals subscriber should receive 15 notification signals"
@@ -340,9 +330,9 @@ defmodule Jido.Signal.BusE2ETest do
         Enum.map(signal_types, fn type ->
           {:ok, signal} =
             Signal.new(%{
-              type: type,
+              data: %{batch: batch, value: :rand.uniform(100)},
               source: "/e2e_test",
-              data: %{batch: batch, value: :rand.uniform(100)}
+              type: type
             })
 
           signal

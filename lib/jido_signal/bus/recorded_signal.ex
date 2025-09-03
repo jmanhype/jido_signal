@@ -129,10 +129,10 @@ defmodule Jido.Signal.Bus.RecordedSignal do
 
     # Construct the RecordedSignal
     %__MODULE__{
-      id: atomized_map[:id],
-      type: atomized_map[:type],
       created_at: created_at,
-      signal: signal
+      id: atomized_map[:id],
+      signal: signal,
+      type: atomized_map[:type]
     }
   end
 end

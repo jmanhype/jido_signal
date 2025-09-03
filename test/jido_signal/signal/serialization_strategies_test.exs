@@ -13,9 +13,9 @@ defmodule Jido.Signal.SerializationStrategiesTest do
   describe "Signal serialization with different strategies" do
     test "all serializers can handle basic Signal" do
       signal = %Signal{
-        type: "test.event",
+        id: "test-id-123",
         source: "/test/source",
-        id: "test-id-123"
+        type: "test.event"
       }
 
       for {_name, serializer} <- @serializers do
@@ -32,15 +32,15 @@ defmodule Jido.Signal.SerializationStrategiesTest do
 
     test "all serializers can handle Signal with data" do
       signal = %Signal{
-        type: "test.event",
-        source: "/test/source",
-        id: "test-id-123",
         data: %{
-          "message" => "hello world",
-          "count" => 42,
           "active" => true,
+          "count" => 42,
+          "message" => "hello world",
           "metadata" => %{"version" => "1.0"}
-        }
+        },
+        id: "test-id-123",
+        source: "/test/source",
+        type: "test.event"
       }
 
       for {_name, serializer} <- @serializers do
@@ -76,8 +76,8 @@ defmodule Jido.Signal.SerializationStrategiesTest do
 
     test "all serializers can handle Signal lists" do
       signals = [
-        %Signal{type: "first.event", source: "/test/first", id: "first-id"},
-        %Signal{type: "second.event", source: "/test/second", id: "second-id"}
+        %Signal{id: "first-id", source: "/test/first", type: "first.event"},
+        %Signal{id: "second-id", source: "/test/second", type: "second.event"}
       ]
 
       for {_name, serializer} <- @serializers do
@@ -98,24 +98,24 @@ defmodule Jido.Signal.SerializationStrategiesTest do
 
     test "all serializers handle full Signal structure" do
       signal = %Signal{
-        type: "complex.event",
-        source: "/complex/source",
-        id: "complex-id-123",
-        subject: "test-subject",
-        time: "2023-01-01T12:00:00Z",
-        datacontenttype: "application/json",
-        dataschema: "https://example.com/schema",
         data: %{
-          "nested" => %{
-            "deep" => %{"value" => 42}
-          },
           "list" => [1, 2, 3],
           "mixed" => %{
-            "string" => "text",
+            "boolean" => false,
             "number" => 3.14,
-            "boolean" => false
+            "string" => "text"
+          },
+          "nested" => %{
+            "deep" => %{"value" => 42}
           }
-        }
+        },
+        datacontenttype: "application/json",
+        dataschema: "https://example.com/schema",
+        id: "complex-id-123",
+        source: "/complex/source",
+        subject: "test-subject",
+        time: "2023-01-01T12:00:00Z",
+        type: "complex.event"
       }
 
       for {_name, serializer} <- @serializers do
@@ -150,18 +150,18 @@ defmodule Jido.Signal.SerializationStrategiesTest do
 
     test "serializer size comparison" do
       signal = %Signal{
-        type: "benchmark.event",
-        source: "/benchmark/source",
-        id: "benchmark-id-123",
         data: %{
           "message" => "This is a test message for size comparison",
-          "numbers" => Enum.to_list(1..100),
           "metadata" => %{
             "created_at" => "2023-01-01T12:00:00Z",
-            "version" => "1.0.0",
-            "tags" => ["test", "benchmark", "comparison"]
-          }
-        }
+            "tags" => ["test", "benchmark", "comparison"],
+            "version" => "1.0.0"
+          },
+          "numbers" => Enum.to_list(1..100)
+        },
+        id: "benchmark-id-123",
+        source: "/benchmark/source",
+        type: "benchmark.event"
       }
 
       sizes =
@@ -178,13 +178,13 @@ defmodule Jido.Signal.SerializationStrategiesTest do
 
     test "serialization performance comparison" do
       signal = %Signal{
-        type: "performance.test",
-        source: "/perf/test",
-        id: "perf-123",
         data: %{
-          "payload" => String.duplicate("x", 1000),
-          "list" => Enum.to_list(1..500)
-        }
+          "list" => Enum.to_list(1..500),
+          "payload" => String.duplicate("x", 1000)
+        },
+        id: "perf-123",
+        source: "/perf/test",
+        type: "performance.test"
       }
 
       for {_name, serializer} <- @serializers do
@@ -208,7 +208,7 @@ defmodule Jido.Signal.SerializationStrategiesTest do
 
   describe "default serializer configuration" do
     test "uses JsonSerializer by default" do
-      signal = %Signal{type: "test.event", source: "/test", id: "test-123"}
+      signal = %Signal{id: "test-123", source: "/test", type: "test.event"}
 
       # Should use JSON by default
       {:ok, binary} = Signal.serialize(signal)
@@ -219,7 +219,7 @@ defmodule Jido.Signal.SerializationStrategiesTest do
     end
 
     test "can override serializer per operation" do
-      signal = %Signal{type: "test.event", source: "/test", id: "test-123"}
+      signal = %Signal{id: "test-123", source: "/test", type: "test.event"}
 
       # Use Erlang term serializer explicitly
       {:ok, term_binary} = Signal.serialize(signal, serializer: ErlangTermSerializer)

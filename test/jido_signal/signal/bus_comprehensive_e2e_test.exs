@@ -37,9 +37,7 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
 
     @impl true
     def init(opts) do
-      Logger.debug(
-        "TestClient #{Keyword.fetch!(opts, :id)} initialized with name: #{Keyword.get(opts, :name)}"
-      )
+      Logger.debug("TestClient #{Keyword.fetch!(opts, :id)} initialized with name: #{Keyword.get(opts, :name)}")
 
       {:ok,
        %{
@@ -51,9 +49,7 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
 
     @impl true
     def handle_call(:get_signals, _from, state) do
-      Logger.debug(
-        "TestClient #{state.id} (#{state.name}) returning #{length(state.signals)} signals"
-      )
+      Logger.debug("TestClient #{state.id} (#{state.name}) returning #{length(state.signals)} signals")
 
       {:reply, state.signals, state}
     end
@@ -114,9 +110,7 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
 
       # Test regular subscription
       {:ok, regular_sub_id} =
-        Bus.subscribe(bus_pid, "test.regular",
-          dispatch: {:pid, target: regular_client, delivery_mode: :async}
-        )
+        Bus.subscribe(bus_pid, "test.regular", dispatch: {:pid, target: regular_client, delivery_mode: :async})
 
       assert is_binary(regular_sub_id), "Subscribe should return a subscription ID"
 
@@ -143,9 +137,7 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
       {:ok, wildcard_client} = TestClient.start_link(id: "wildcard_client")
 
       {:ok, wildcard_sub_id} =
-        Bus.subscribe(bus_pid, "**",
-          dispatch: {:pid, target: wildcard_client, delivery_mode: :async}
-        )
+        Bus.subscribe(bus_pid, "**", dispatch: {:pid, target: wildcard_client, delivery_mode: :async})
 
       # Test error case - duplicate subscription ID
       {:ok, duplicate_client} = TestClient.start_link(id: "duplicate_client")
@@ -162,23 +154,23 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
       # Create test signals
       {:ok, regular_signal} =
         Signal.new(%{
-          type: "test.regular",
+          data: %{batch: 1, message: "regular signal"},
           source: "/e2e_test",
-          data: %{message: "regular signal", batch: 1}
+          type: "test.regular"
         })
 
       {:ok, persistent_signal} =
         Signal.new(%{
-          type: "test.persistent",
+          data: %{batch: 1, message: "persistent signal"},
           source: "/e2e_test",
-          data: %{message: "persistent signal", batch: 1}
+          type: "test.persistent"
         })
 
       {:ok, wildcard_signal} =
         Signal.new(%{
-          type: "test.wildcard.signal",
+          data: %{batch: 1, message: "wildcard signal"},
           source: "/e2e_test",
-          data: %{message: "wildcard signal", batch: 1}
+          type: "test.wildcard.signal"
         })
 
       # Publish signals
@@ -299,9 +291,9 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
       # Publish a signal to the reconnect subscription
       {:ok, reconnect_signal} =
         Signal.new(%{
-          type: "test.reconnect",
+          data: %{batch: 2, message: "before disconnect"},
           source: "/e2e_test",
-          data: %{message: "before disconnect", batch: 2}
+          type: "test.reconnect"
         })
 
       {:ok, _} = Bus.publish(bus_pid, [reconnect_signal])
@@ -318,9 +310,9 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
       # Publish more signals while disconnected
       {:ok, disconnected_signal} =
         Signal.new(%{
-          type: "test.reconnect",
+          data: %{batch: 3, message: "while disconnected"},
           source: "/e2e_test",
-          data: %{message: "while disconnected", batch: 3}
+          type: "test.reconnect"
         })
 
       {:ok, _} = Bus.publish(bus_pid, [disconnected_signal])
@@ -368,18 +360,16 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
       {:ok, order_client} = TestClient.start_link(id: "order_client")
 
       {:ok, order_sub_id} =
-        Bus.subscribe(bus_pid, "test.order.**",
-          dispatch: {:pid, target: order_client, delivery_mode: :async}
-        )
+        Bus.subscribe(bus_pid, "test.order.**", dispatch: {:pid, target: order_client, delivery_mode: :async})
 
       # Create multiple signals with different types
       ordered_signals =
         Enum.map(1..5, fn i ->
           {:ok, signal} =
             Signal.new(%{
-              type: "test.order.#{i}",
+              data: %{batch: 4, sequence: i},
               source: "/e2e_test",
-              data: %{sequence: i, batch: 4}
+              type: "test.order.#{i}"
             })
 
           signal
@@ -401,9 +391,9 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
       # Test publish with correlation_id preservation
       {:ok, correlated_signal} =
         Signal.new(%{
-          type: "test.correlation",
+          data: %{correlation_test: true},
           source: "/e2e_test",
-          data: %{correlation_test: true}
+          type: "test.correlation"
         })
 
       {:ok, _} = Bus.publish(bus_pid, [correlated_signal])
@@ -413,9 +403,9 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
         Enum.map(1..100, fn i ->
           {:ok, signal} =
             Signal.new(%{
-              type: "test.large.batch",
+              data: %{batch: 5, index: i},
               source: "/e2e_test",
-              data: %{index: i, batch: 5}
+              type: "test.large.batch"
             })
 
           signal
@@ -512,9 +502,9 @@ defmodule Jido.Signal.BusComprehensiveE2ETest do
           Task.async(fn ->
             {:ok, signal} =
               Signal.new(%{
-                type: "test.concurrent.#{rem(i, 3)}",
+                data: %{index: i},
                 source: "/concurrent_test",
-                data: %{index: i}
+                type: "test.concurrent.#{rem(i, 3)}"
               })
 
             Bus.publish(bus_name, [signal])

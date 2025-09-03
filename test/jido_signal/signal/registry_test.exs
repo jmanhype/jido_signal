@@ -27,10 +27,10 @@ defmodule JidoTest.Signal.RegistryTest do
       subscription = subscriptions["sub1"]
 
       assert %Subscription{
-               id: "sub1",
-               path: "user.created",
+               created_at: %DateTime{},
                dispatch: ^dispatch_config,
-               created_at: %DateTime{}
+               id: "sub1",
+               path: "user.created"
              } = subscription
     end
 
@@ -116,9 +116,9 @@ defmodule JidoTest.Signal.RegistryTest do
       assert {:ok, subscription} = Registry.lookup(registry, "sub1")
 
       assert %Subscription{
+               dispatch: ^dispatch_config,
                id: "sub1",
-               path: "user.created",
-               dispatch: ^dispatch_config
+               path: "user.created"
              } = subscription
     end
 
@@ -273,10 +273,10 @@ defmodule JidoTest.Signal.RegistryTest do
       {:ok, subscription} = Registry.lookup(registry, "sub1")
 
       assert %Subscription{
-               id: "sub1",
-               path: "user.created",
+               created_at: %DateTime{},
                dispatch: {:pid, _pid},
-               created_at: %DateTime{}
+               id: "sub1",
+               path: "user.created"
              } = subscription
 
       # Verify created_at is a valid DateTime

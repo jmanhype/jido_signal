@@ -54,8 +54,8 @@ defmodule Jido.Signal.Serialization.ErlangTermSerializerTest do
     test "serializes and deserializes nested structures" do
       original = %{
         data: %TestStruct{field1: [1, 2, 3], field2: %{nested: "value"}},
-        metadata: {:version, 1},
-        flags: [:enabled, :debug]
+        flags: [:enabled, :debug],
+        metadata: {:version, 1}
       }
 
       {:ok, serialized} = ErlangTermSerializer.serialize(original)
@@ -65,7 +65,7 @@ defmodule Jido.Signal.Serialization.ErlangTermSerializerTest do
     end
 
     test "preserves atom types" do
-      original = %{status: :ok, errors: [:timeout, :invalid]}
+      original = %{errors: [:timeout, :invalid], status: :ok}
       {:ok, serialized} = ErlangTermSerializer.serialize(original)
       {:ok, deserialized} = ErlangTermSerializer.deserialize(serialized)
 

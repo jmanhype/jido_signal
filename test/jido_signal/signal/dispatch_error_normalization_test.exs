@@ -16,7 +16,7 @@ defmodule Jido.Signal.DispatchErrorNormalizationTest do
 
   test "dispatch normalizes errors to Jido.Signal.Error when enabled" do
     Application.put_env(:jido, :normalize_dispatch_errors, true)
-    {:ok, signal} = Signal.new(%{type: "test.event", source: "test", data: %{value: 42}})
+    {:ok, signal} = Signal.new(%{data: %{value: 42}, source: "test", type: "test.event"})
 
     # Use PID adapter with dead process
     {:ok, pid} = Agent.start(fn -> :ok end)
@@ -37,7 +37,7 @@ defmodule Jido.Signal.DispatchErrorNormalizationTest do
 
   test "dispatch_batch normalizes errors when enabled" do
     Application.put_env(:jido, :normalize_dispatch_errors, true)
-    {:ok, signal} = Signal.new(%{type: "test.event", source: "test", data: %{value: 42}})
+    {:ok, signal} = Signal.new(%{data: %{value: 42}, source: "test", type: "test.event"})
 
     configs = [
       # This should succeed
@@ -76,7 +76,7 @@ defmodule Jido.Signal.DispatchErrorNormalizationTest do
       nil
     )
 
-    {:ok, signal} = Signal.new(%{type: "test.event", source: "test", data: %{value: 42}})
+    {:ok, signal} = Signal.new(%{data: %{value: 42}, source: "test", type: "test.event"})
     config = {:noop, []}
 
     # Successful dispatch

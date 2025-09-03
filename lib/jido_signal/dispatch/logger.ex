@@ -62,11 +62,13 @@ defmodule Jido.Signal.Dispatch.LoggerAdapter do
 
   @behaviour Jido.Signal.Dispatch.Adapter
 
+  alias Jido.Signal.Dispatch.Adapter
+
   require Logger
 
   @valid_levels [:debug, :info, :warning, :error]
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Validates the logger adapter configuration options.
 
@@ -95,7 +97,7 @@ defmodule Jido.Signal.Dispatch.LoggerAdapter do
     end
   end
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Logs a signal using the configured format and level.
 
@@ -134,11 +136,11 @@ defmodule Jido.Signal.Dispatch.LoggerAdapter do
         level,
         fn ->
           %{
+            data: signal.data,
             event: "signal_dispatched",
             id: signal.id,
-            type: signal.type,
-            data: signal.data,
-            source: signal.source
+            source: signal.source,
+            type: signal.type
           }
         end,
         []

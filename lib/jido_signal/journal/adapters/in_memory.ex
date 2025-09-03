@@ -11,10 +11,10 @@ defmodule Jido.Signal.Journal.Adapters.InMemory do
   def init do
     case Agent.start_link(fn ->
            %{
-             signals: %{},
              causes: %{},
+             conversations: %{},
              effects: %{},
-             conversations: %{}
+             signals: %{}
            }
          end) do
       {:ok, pid} -> {:ok, pid}
@@ -64,7 +64,7 @@ defmodule Jido.Signal.Journal.Adapters.InMemory do
 
     case Agent.get(target, fn state -> get_in(state, [:effects, signal_id]) end) do
       nil -> {:error, :not_found}
-      effects -> {:ok, MapSet.to_list(effects) |> List.first()}
+      effects -> {:ok, effects |> MapSet.to_list() |> List.first()}
     end
   end
 

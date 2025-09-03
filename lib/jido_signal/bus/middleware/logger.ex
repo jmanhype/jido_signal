@@ -41,19 +41,21 @@ defmodule Jido.Signal.Bus.Middleware.Logger do
 
   use Jido.Signal.Bus.Middleware
 
+  alias Jido.Signal.Bus.Middleware
+
   require Logger
 
-  @type context :: Jido.Signal.Bus.Middleware.context()
-  @type dispatch_result :: Jido.Signal.Bus.Middleware.dispatch_result()
+  @type context :: Middleware.context()
+  @type dispatch_result :: Middleware.dispatch_result()
 
   @impl true
   def init(opts) do
     config = %{
+      include_signal_data: Keyword.get(opts, :include_signal_data, false),
       level: Keyword.get(opts, :level, :info),
-      log_publish: Keyword.get(opts, :log_publish, true),
       log_dispatch: Keyword.get(opts, :log_dispatch, true),
       log_errors: Keyword.get(opts, :log_errors, true),
-      include_signal_data: Keyword.get(opts, :include_signal_data, false),
+      log_publish: Keyword.get(opts, :log_publish, true),
       max_data_length: Keyword.get(opts, :max_data_length, 100)
     }
 

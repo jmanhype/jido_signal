@@ -196,8 +196,8 @@ defmodule Jido.Signal.ID do
     raw = String.replace(uuid, "-", "")
     {:ok, binary} = Base.decode16(raw, case: :mixed)
 
-    <<_ts::unsigned-integer-size(48), _version::unsigned-integer-size(4),
-      seq::unsigned-integer-size(12), _rest::bits>> = binary
+    <<_ts::unsigned-integer-size(48), _version::unsigned-integer-size(4), seq::unsigned-integer-size(12), _rest::bits>> =
+      binary
 
     seq
   end
@@ -285,9 +285,8 @@ defmodule Jido.Signal.ID do
 
   # Format a raw hex string into UUID7 format with hyphens
   defp uuid7_format(
-         <<a::8, b::8, c::8, d::8, e::8, f::8, g::8, h::8, i::8, j::8, k::8, l::8, m::8, n::8,
-           o::8, p::8, q::8, r::8, s::8, t::8, u::8, v::8, w::8, x::8, y::8, z::8, aa::8, bb::8,
-           cc::8, dd::8, ee::8, ff::8>>
+         <<a::8, b::8, c::8, d::8, e::8, f::8, g::8, h::8, i::8, j::8, k::8, l::8, m::8, n::8, o::8, p::8, q::8, r::8,
+           s::8, t::8, u::8, v::8, w::8, x::8, y::8, z::8, aa::8, bb::8, cc::8, dd::8, ee::8, ff::8>>
        ) do
     <<a, b, c, d, e, f, g, h>> <>
       "-" <>

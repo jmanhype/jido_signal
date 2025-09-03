@@ -49,6 +49,8 @@ defmodule Jido.Signal.Dispatch.PubSub do
 
   @behaviour Jido.Signal.Dispatch.Adapter
 
+  alias Jido.Signal.Dispatch.Adapter
+
   @type delivery_target :: atom()
   @type delivery_opts :: [
           target: delivery_target(),
@@ -58,7 +60,7 @@ defmodule Jido.Signal.Dispatch.PubSub do
           :pubsub_not_found
           | term()
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Validates the PubSub adapter configuration options.
 
@@ -87,7 +89,7 @@ defmodule Jido.Signal.Dispatch.PubSub do
     end
   end
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Broadcasts a signal through Phoenix.PubSub.
 

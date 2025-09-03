@@ -50,13 +50,15 @@ defmodule Jido.Signal.Dispatch.Http do
 
   @behaviour Jido.Signal.Dispatch.Adapter
 
+  alias Jido.Signal.Dispatch.Adapter
+
   require Logger
 
   @default_timeout 5000
   @default_method :post
   @default_retry %{
-    max_attempts: 3,
     base_delay: 1000,
+    max_attempts: 3,
     max_delay: 5000
   }
   @valid_methods [:post, :put, :patch]
@@ -64,8 +66,8 @@ defmodule Jido.Signal.Dispatch.Http do
   @type http_method :: :post | :put | :patch
   @type header :: {String.t(), String.t()}
   @type retry_config :: %{
-          max_attempts: pos_integer(),
           base_delay: pos_integer(),
+          max_attempts: pos_integer(),
           max_delay: pos_integer()
         }
   @type delivery_opts :: [
@@ -83,7 +85,7 @@ defmodule Jido.Signal.Dispatch.Http do
           | {:status_error, pos_integer()}
           | term()
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Validates the HTTP adapter configuration options.
 
@@ -121,7 +123,7 @@ defmodule Jido.Signal.Dispatch.Http do
     end
   end
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Delivers a signal via HTTP request.
 
@@ -162,7 +164,7 @@ defmodule Jido.Signal.Dispatch.Http do
 
   defp validate_url(url) when is_binary(url) do
     case URI.parse(url) do
-      %URI{scheme: scheme, host: host}
+      %URI{host: host, scheme: scheme}
       when not is_nil(scheme) and not is_nil(host) and scheme in ["http", "https"] ->
         {:ok, url}
 
@@ -198,8 +200,8 @@ defmodule Jido.Signal.Dispatch.Http do
          {:ok, max_delay} <- validate_positive_integer(retry.max_delay, :max_delay) do
       {:ok,
        %{
-         max_attempts: max_attempts,
          base_delay: base_delay,
+         max_attempts: max_attempts,
          max_delay: max_delay
        }}
     end
@@ -207,8 +209,7 @@ defmodule Jido.Signal.Dispatch.Http do
 
   defp validate_retry(invalid), do: {:error, "invalid retry configuration: #{inspect(invalid)}"}
 
-  defp validate_positive_integer(value, _field) when is_integer(value) and value > 0,
-    do: {:ok, value}
+  defp validate_positive_integer(value, _field) when is_integer(value) and value > 0, do: {:ok, value}
 
   defp validate_positive_integer(invalid, field),
     do: {:error, "#{field} must be a positive integer, got: #{inspect(invalid)}"}

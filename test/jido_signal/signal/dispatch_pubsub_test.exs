@@ -2,6 +2,7 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
   use ExUnit.Case, async: true
 
   alias Jido.Signal
+  alias Jido.Signal.Dispatch.Adapter
   alias Jido.Signal.Dispatch.PubSub
 
   @moduletag :capture_log
@@ -21,7 +22,7 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
       assert function_exported?(PubSub, :deliver, 2)
 
       behaviours = PubSub.__info__(:attributes)[:behaviour] || []
-      assert Jido.Signal.Dispatch.Adapter in behaviours
+      assert Adapter in behaviours
     end
   end
 
@@ -108,9 +109,9 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
     setup do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{message: "test message", value: 42},
           source: "/test/source",
-          data: %{message: "test message", value: 42}
+          type: "test.signal"
         })
 
       topic = "test.events.#{:erlang.unique_integer([:positive])}"
@@ -119,7 +120,7 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
       {:ok, signal: signal, opts: opts, topic: topic}
     end
 
-    test "successfully broadcasts signal to PubSub", %{signal: signal, opts: opts, topic: topic} do
+    test "successfully broadcasts signal to PubSub", %{opts: opts, signal: signal, topic: topic} do
       # Subscribe to the topic to receive the broadcast
       Phoenix.PubSub.subscribe(@test_pubsub, topic)
 
@@ -131,8 +132,8 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
     end
 
     test "multiple subscribers receive the same signal", %{
-      signal: signal,
       opts: opts,
+      signal: signal,
       topic: topic
     } do
       test_process = self()
@@ -165,16 +166,16 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
 
     test "delivers signal with all data intact", %{opts: opts, topic: topic} do
       complex_data = %{
-        user: %{id: 123, name: "John Doe"},
         metadata: %{tags: ["important"], version: "1.0"},
-        nested: %{deep: %{value: "test"}}
+        nested: %{deep: %{value: "test"}},
+        user: %{id: 123, name: "John Doe"}
       }
 
       {:ok, signal} =
         Signal.new(%{
-          type: "complex.signal",
+          data: complex_data,
           source: "/complex/source",
-          data: complex_data
+          type: "complex.signal"
         })
 
       Phoenix.PubSub.subscribe(@test_pubsub, topic)
@@ -269,8 +270,8 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
 
   describe "topic-based routing" do
     test "signals are isolated by topic", %{} do
-      {:ok, signal1} = Signal.new(%{type: "signal1", source: "/test", data: %{id: 1}})
-      {:ok, signal2} = Signal.new(%{type: "signal2", source: "/test", data: %{id: 2}})
+      {:ok, signal1} = Signal.new(%{data: %{id: 1}, source: "/test", type: "signal1"})
+      {:ok, signal2} = Signal.new(%{data: %{id: 2}, source: "/test", type: "signal2"})
 
       topic_a = "events.a.#{:erlang.unique_integer([:positive])}"
       topic_b = "events.b.#{:erlang.unique_integer([:positive])}"
@@ -292,7 +293,7 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
     end
 
     test "hierarchical topic patterns" do
-      {:ok, signal} = Signal.new(%{type: "test.signal", source: "/test"})
+      {:ok, signal} = Signal.new(%{source: "/test", type: "test.signal"})
 
       topics = [
         "events.user.created",
@@ -321,9 +322,9 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
     setup do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{message: "test message", value: 42},
           source: "/test/source",
-          data: %{message: "test message", value: 42}
+          type: "test.signal"
         })
 
       {:ok, signal: signal}
@@ -347,7 +348,7 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
     end
 
     test "handles malformed opts gracefully" do
-      {:ok, signal} = Signal.new(%{type: "test", source: "/test"})
+      {:ok, signal} = Signal.new(%{source: "/test", type: "test"})
 
       # Missing required keys should raise
       assert_raise KeyError, fn ->
@@ -364,9 +365,9 @@ defmodule JidoTest.Signal.Dispatch.PubSubTest do
     setup do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{message: "test message", value: 42},
           source: "/test/source",
-          data: %{message: "test message", value: 42}
+          type: "test.signal"
         })
 
       {:ok, signal: signal}

@@ -40,9 +40,9 @@ defmodule JidoTest.Signal.Bus do
       # Publish a signal
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus, [signal])
@@ -83,9 +83,9 @@ defmodule JidoTest.Signal.Bus do
       # Publish a signal
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus, [signal])
@@ -103,9 +103,9 @@ defmodule JidoTest.Signal.Bus do
         Enum.map(1..3, fn i ->
           {:ok, signal} =
             Signal.new(%{
-              type: "test.signal.#{i}",
+              data: %{value: i},
               source: "/test",
-              data: %{value: i}
+              type: "test.signal.#{i}"
             })
 
           signal
@@ -127,16 +127,16 @@ defmodule JidoTest.Signal.Bus do
       # Publish multiple signals
       {:ok, signal1} =
         Signal.new(%{
-          type: "test.signal.1",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal.1"
         })
 
       {:ok, signal2} =
         Signal.new(%{
-          type: "test.signal.2",
+          data: %{value: 2},
           source: "/test",
-          data: %{value: 2}
+          type: "test.signal.2"
         })
 
       {:ok, _} = Bus.publish(bus, [signal1, signal2])
@@ -158,9 +158,9 @@ defmodule JidoTest.Signal.Bus do
       # Publish a signal with correlation_id
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus, [signal])
@@ -177,9 +177,9 @@ defmodule JidoTest.Signal.Bus do
         Enum.map(1..2, fn i ->
           {:ok, signal} =
             Signal.new(%{
-              type: "test.signal.#{i}",
+              data: %{value: i},
               source: "/test",
-              data: %{value: i}
+              type: "test.signal.#{i}"
             })
 
           signal
@@ -201,9 +201,9 @@ defmodule JidoTest.Signal.Bus do
       # Publish a signal
       {:ok, signal1} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       {:ok, [recorded1]} = Bus.publish(bus, [signal1])
@@ -217,9 +217,9 @@ defmodule JidoTest.Signal.Bus do
       # Publish another signal
       {:ok, signal2} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 2},
           source: "/test",
-          data: %{value: 2}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus, [signal2])
@@ -244,9 +244,9 @@ defmodule JidoTest.Signal.Bus do
         Enum.map(1..10, fn i ->
           {:ok, signal} =
             Signal.new(%{
-              type: "test.signal",
+              data: %{value: i},
               source: "/test",
-              data: %{value: i}
+              type: "test.signal"
             })
 
           signal
@@ -267,9 +267,9 @@ defmodule JidoTest.Signal.Bus do
         Enum.map(1..2, fn i ->
           {:ok, signal} =
             Signal.new(%{
-              type: "test.signal.#{i}",
+              data: %{value: i},
               source: "/test",
-              data: %{value: i}
+              type: "test.signal.#{i}"
             })
 
           signal

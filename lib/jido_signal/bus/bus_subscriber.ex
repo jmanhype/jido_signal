@@ -10,6 +10,7 @@ defmodule Jido.Signal.Bus.Subscriber do
   use Private
   use TypedStruct
 
+  alias Jido.Signal.Bus.PersistentSubscription
   alias Jido.Signal.Bus.State, as: BusState
   alias Jido.Signal.Bus.Subscriber
   alias Jido.Signal.Error
@@ -41,12 +42,12 @@ defmodule Jido.Signal.Bus.Subscriber do
     else
       # Create the subscription struct
       subscription = %Subscriber{
+        created_at: DateTime.utc_now(),
+        dispatch: dispatch,
         id: subscription_id,
         path: path,
-        dispatch: dispatch,
-        persistent?: persistent?,
         persistence_pid: nil,
-        created_at: DateTime.utc_now()
+        persistent?: persistent?
       }
 
       if persistent? do
@@ -65,7 +66,7 @@ defmodule Jido.Signal.Bus.Subscriber do
 
         case DynamicSupervisor.start_child(
                state.child_supervisor,
-               {Jido.Signal.Bus.PersistentSubscription, persistent_sub_opts}
+               {PersistentSubscription, persistent_sub_opts}
              ) do
           {:ok, pid} ->
             # Update subscription with persistence pid
@@ -99,10 +100,10 @@ defmodule Jido.Signal.Bus.Subscriber do
 
         # Create route for the subscription
         route = %Router.Route{
+          match: nil,
           path: subscription.path,
-          target: subscription.dispatch,
           priority: 0,
-          match: nil
+          target: subscription.dispatch
         }
 
         case BusState.add_route(new_state, route) do

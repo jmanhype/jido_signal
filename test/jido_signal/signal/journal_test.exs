@@ -3,14 +3,15 @@ defmodule Jido.Signal.JournalTest do
 
   alias Jido.Signal
   alias Jido.Signal.Journal
+  alias Jido.Signal.Journal.Adapters.ETS
 
   setup do
     on_exit(fn ->
       # Clean up any adapter state
       if journal = Process.get(:current_journal) do
         if is_pid(journal.adapter_pid) and Process.alive?(journal.adapter_pid) do
-          if journal.adapter == Jido.Signal.Journal.Adapters.ETS do
-            Jido.Signal.Journal.Adapters.ETS.cleanup(journal.adapter_pid)
+          if journal.adapter == ETS do
+            ETS.cleanup(journal.adapter_pid)
           end
 
           Process.exit(journal.adapter_pid, :normal)
@@ -221,7 +222,7 @@ defmodule Jido.Signal.JournalTest do
       chain = Journal.trace_chain(journal, signal1.id, :forward)
       assert length(chain) == 3
 
-      assert Enum.map(chain, & &1.id) |> MapSet.new() ==
+      assert chain |> MapSet.new(& &1.id) ==
                MapSet.new([signal1.id, signal2a.id, signal2b.id])
     end
   end

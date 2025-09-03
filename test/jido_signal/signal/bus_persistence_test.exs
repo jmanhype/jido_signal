@@ -109,9 +109,9 @@ defmodule JidoTest.Signal.Bus.PersistentSubscriptionTest do
         # Only allow 1 in-flight signal at a time
         max_in_flight: 1,
         bus_subscription: %Subscriber{
+          dispatch: dispatch_config,
           id: ID.generate!(),
-          path: "test/path",
-          dispatch: dispatch_config
+          path: "test/path"
         }
       ]
 
@@ -120,16 +120,16 @@ defmodule JidoTest.Signal.Bus.PersistentSubscriptionTest do
       # Create two test signals
       signal1 =
         Signal.new!(%{
-          type: "test-type-1",
+          data: %{test: "data1"},
           source: "/test",
-          data: %{test: "data1"}
+          type: "test-type-1"
         })
 
       signal2 =
         Signal.new!(%{
-          type: "test-type-2",
+          data: %{test: "data2"},
           source: "/test",
-          data: %{test: "data2"}
+          type: "test-type-2"
         })
 
       # Generate UUID7s for signal log IDs
@@ -199,9 +199,9 @@ defmodule JidoTest.Signal.Bus.PersistentSubscriptionTest do
         # Allow multiple in-flight signals
         max_in_flight: 10,
         bus_subscription: %Subscriber{
+          dispatch: dispatch_config,
           id: ID.generate!(),
-          path: "test/path",
-          dispatch: dispatch_config
+          path: "test/path"
         }
       ]
 
@@ -213,9 +213,9 @@ defmodule JidoTest.Signal.Bus.PersistentSubscriptionTest do
         for i <- 1..5 do
           signal =
             Signal.new!(%{
-              type: "test-type-#{i}",
+              data: %{test: "data#{i}"},
               source: "/test",
-              data: %{test: "data#{i}"}
+              type: "test-type-#{i}"
             })
 
           # Generate a UUID7 for the signal log ID

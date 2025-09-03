@@ -121,7 +121,7 @@ defmodule Jido.Signal.BusMultiBusE2ETest do
       filter_pattern = Keyword.get(opts, :filter_pattern, nil)
       # :allow or :deny
       filter_mode = Keyword.get(opts, :filter_mode, :allow)
-      {:ok, %{filter_pattern: filter_pattern, filter_mode: filter_mode}}
+      {:ok, %{filter_mode: filter_mode, filter_pattern: filter_pattern}}
     end
 
     @impl true
@@ -154,7 +154,7 @@ defmodule Jido.Signal.BusMultiBusE2ETest do
     @impl true
     def init(opts) do
       test_pid = Keyword.get(opts, :test_pid)
-      {:ok, %{publish_count: 0, dispatch_count: 0, test_pid: test_pid}}
+      {:ok, %{dispatch_count: 0, publish_count: 0, test_pid: test_pid}}
     end
 
     @impl true
@@ -232,14 +232,10 @@ defmodule Jido.Signal.BusMultiBusE2ETest do
 
       # Subscribe to user signals on Bus A and system signals on Bus B
       {:ok, sub_1a} =
-        Bus.subscribe(bus_a_pid, "user.**",
-          dispatch: {:pid, target: client_1, delivery_mode: :async}
-        )
+        Bus.subscribe(bus_a_pid, "user.**", dispatch: {:pid, target: client_1, delivery_mode: :async})
 
       {:ok, sub_1b} =
-        Bus.subscribe(bus_b_pid, "system.**",
-          dispatch: {:pid, target: client_1, delivery_mode: :async}
-        )
+        Bus.subscribe(bus_b_pid, "system.**", dispatch: {:pid, target: client_1, delivery_mode: :async})
 
       # Client 2: Only subscribes to Bus A
       {:ok, client_2} = MultiTestClient.start_link(id: "bus_a_only_client")
@@ -260,37 +256,37 @@ defmodule Jido.Signal.BusMultiBusE2ETest do
       # Create test signals of different types
       {:ok, user_signal_1} =
         Signal.new(%{
-          type: "user.login",
+          data: %{timestamp: DateTime.utc_now(), user_id: "user_123"},
           source: "/auth",
-          data: %{user_id: "user_123", timestamp: DateTime.utc_now()}
+          type: "user.login"
         })
 
       {:ok, user_signal_2} =
         Signal.new(%{
-          type: "user.logout",
+          data: %{timestamp: DateTime.utc_now(), user_id: "user_456"},
           source: "/auth",
-          data: %{user_id: "user_456", timestamp: DateTime.utc_now()}
+          type: "user.logout"
         })
 
       {:ok, system_signal_1} =
         Signal.new(%{
-          type: "system.startup",
+          data: %{service: "api", version: "1.0.0"},
           source: "/server",
-          data: %{service: "api", version: "1.0.0"}
+          type: "system.startup"
         })
 
       {:ok, system_signal_2} =
         Signal.new(%{
-          type: "system.health_check",
+          data: %{checks: 5, status: "healthy"},
           source: "/monitor",
-          data: %{status: "healthy", checks: 5}
+          type: "system.health_check"
         })
 
       {:ok, other_signal} =
         Signal.new(%{
-          type: "data.created",
+          data: %{record_id: 789, table: "users"},
           source: "/database",
-          data: %{table: "users", record_id: 789}
+          type: "data.created"
         })
 
       # Publish user signals to Bus A (should be allowed by filter)
@@ -418,16 +414,16 @@ defmodule Jido.Signal.BusMultiBusE2ETest do
       # Publish specific signals that match persistent subscriptions
       {:ok, login_signal} =
         Signal.new(%{
-          type: "user.login",
+          data: %{session_id: "abc123", user_id: "persistent_user"},
           source: "/auth",
-          data: %{user_id: "persistent_user", session_id: "abc123"}
+          type: "user.login"
         })
 
       {:ok, startup_signal} =
         Signal.new(%{
-          type: "system.startup",
+          data: %{service: "database", version: "2.0.0"},
           source: "/server",
-          data: %{service: "database", version: "2.0.0"}
+          type: "system.startup"
         })
 
       {:ok, _} = Bus.publish(bus_a_pid, [login_signal])
@@ -544,21 +540,17 @@ defmodule Jido.Signal.BusMultiBusE2ETest do
 
       # Subscribe to both buses
       {:ok, _} =
-        Bus.subscribe(bus_transform_name, "**",
-          dispatch: {:pid, target: transform_client, delivery_mode: :async}
-        )
+        Bus.subscribe(bus_transform_name, "**", dispatch: {:pid, target: transform_client, delivery_mode: :async})
 
       {:ok, _} =
-        Bus.subscribe(bus_enrich_name, "**",
-          dispatch: {:pid, target: enrich_client, delivery_mode: :async}
-        )
+        Bus.subscribe(bus_enrich_name, "**", dispatch: {:pid, target: enrich_client, delivery_mode: :async})
 
       # Publish the same signal to both buses
       {:ok, test_signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{original: "data"},
           source: "/test",
-          data: %{original: "data"}
+          type: "test.signal"
         })
 
       {:ok, _} = Bus.publish(bus_transform_name, [test_signal])
@@ -584,8 +576,8 @@ defmodule Jido.Signal.BusMultiBusE2ETest do
       assert enrich_signal.type == "test.signal"
 
       assert enrich_signal.data == %{
-               original: "data",
                middleware: "enriched",
+               original: "data",
                timestamp: "added"
              }
 
@@ -631,9 +623,7 @@ defmodule Jido.Signal.BusMultiBusE2ETest do
           {:ok, client} = MultiTestClient.start_link(id: "client_#{bus_index}_#{client_index}")
 
           {:ok, _sub_id} =
-            Bus.subscribe(bus_pid, "load.**",
-              dispatch: {:pid, target: client, delivery_mode: :async}
-            )
+            Bus.subscribe(bus_pid, "load.**", dispatch: {:pid, target: client, delivery_mode: :async})
 
           {client, bus_pid}
         end
@@ -650,9 +640,9 @@ defmodule Jido.Signal.BusMultiBusE2ETest do
               Enum.map(1..signals_per_bus, fn signal_index ->
                 {:ok, signal} =
                   Signal.new(%{
-                    type: "load.test.#{bus_index}.#{signal_index}",
+                    data: %{bus: bus_index, signal: signal_index, timestamp: DateTime.utc_now()},
                     source: "/load_test",
-                    data: %{bus: bus_index, signal: signal_index, timestamp: DateTime.utc_now()}
+                    type: "load.test.#{bus_index}.#{signal_index}"
                   })
 
                 signal

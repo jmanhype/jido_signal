@@ -7,16 +7,16 @@ defmodule JidoTest.Signal.Bus.RecordedSignalSerializationTest do
   describe "RecordedSignal.serialize/1" do
     test "serializes a simple recorded signal" do
       signal = %Signal{
-        type: "test.event",
+        id: "test-id-123",
         source: "/test/source",
-        id: "test-id-123"
+        type: "test.event"
       }
 
       recorded = %RecordedSignal{
-        id: "record-123",
-        type: "test.event",
         created_at: DateTime.from_naive!(~N[2023-01-01 12:00:00], "Etc/UTC"),
-        signal: signal
+        id: "record-123",
+        signal: signal,
+        type: "test.event"
       }
 
       json = RecordedSignal.serialize(recorded)
@@ -32,21 +32,21 @@ defmodule JidoTest.Signal.Bus.RecordedSignalSerializationTest do
     end
 
     test "serializes a list of recorded signals" do
-      signal1 = %Signal{type: "first.event", source: "/test/first", id: "first-id"}
-      signal2 = %Signal{type: "second.event", source: "/test/second", id: "second-id"}
+      signal1 = %Signal{id: "first-id", source: "/test/first", type: "first.event"}
+      signal2 = %Signal{id: "second-id", source: "/test/second", type: "second.event"}
 
       records = [
         %RecordedSignal{
-          id: "record-1",
-          type: "first.event",
           created_at: DateTime.from_naive!(~N[2023-01-01 12:00:00], "Etc/UTC"),
-          signal: signal1
+          id: "record-1",
+          signal: signal1,
+          type: "first.event"
         },
         %RecordedSignal{
-          id: "record-2",
-          type: "second.event",
           created_at: DateTime.from_naive!(~N[2023-01-01 13:00:00], "Etc/UTC"),
-          signal: signal2
+          id: "record-2",
+          signal: signal2,
+          type: "second.event"
         }
       ]
 
@@ -143,22 +143,22 @@ defmodule JidoTest.Signal.Bus.RecordedSignalSerializationTest do
   describe "round-trip serialization" do
     test "preserves recorded signal data through serialization and deserialization" do
       signal = %Signal{
-        type: "test.event",
-        source: "/test/source",
-        id: "test-id-123",
-        subject: "test-subject",
         data: %{
-          "string" => "value",
+          "boolean" => true,
           "number" => 42,
-          "boolean" => true
-        }
+          "string" => "value"
+        },
+        id: "test-id-123",
+        source: "/test/source",
+        subject: "test-subject",
+        type: "test.event"
       }
 
       original = %RecordedSignal{
-        id: "record-123",
-        type: "test.event",
         created_at: DateTime.from_naive!(~N[2023-01-01 12:00:00], "Etc/UTC"),
-        signal: signal
+        id: "record-123",
+        signal: signal,
+        type: "test.event"
       }
 
       json = RecordedSignal.serialize(original)
@@ -180,21 +180,21 @@ defmodule JidoTest.Signal.Bus.RecordedSignalSerializationTest do
     end
 
     test "preserves list of recorded signals through serialization and deserialization" do
-      signal1 = %Signal{type: "first.event", source: "/test/first", id: "first-id"}
-      signal2 = %Signal{type: "second.event", source: "/test/second", id: "second-id"}
+      signal1 = %Signal{id: "first-id", source: "/test/first", type: "first.event"}
+      signal2 = %Signal{id: "second-id", source: "/test/second", type: "second.event"}
 
       originals = [
         %RecordedSignal{
-          id: "record-1",
-          type: "first.event",
           created_at: DateTime.from_naive!(~N[2023-01-01 12:00:00], "Etc/UTC"),
-          signal: signal1
+          id: "record-1",
+          signal: signal1,
+          type: "first.event"
         },
         %RecordedSignal{
-          id: "record-2",
-          type: "second.event",
           created_at: DateTime.from_naive!(~N[2023-01-01 13:00:00], "Etc/UTC"),
-          signal: signal2
+          id: "record-2",
+          signal: signal2,
+          type: "second.event"
         }
       ]
 
@@ -203,7 +203,8 @@ defmodule JidoTest.Signal.Bus.RecordedSignalSerializationTest do
 
       assert length(deserialized) == length(originals)
 
-      Enum.zip(originals, deserialized)
+      originals
+      |> Enum.zip(deserialized)
       |> Enum.each(fn {original, deserialized} ->
         assert deserialized.id == original.id
         assert deserialized.type == original.type

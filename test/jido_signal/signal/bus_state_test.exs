@@ -3,6 +3,7 @@ defmodule JidoTest.Signal.Bus.StateTest do
 
   alias Jido.Signal
   alias Jido.Signal.Bus.State
+  alias Jido.Signal.Bus.Subscriber
   alias Jido.Signal.ID
   alias Jido.Signal.Router
 
@@ -86,7 +87,7 @@ defmodule JidoTest.Signal.Bus.StateTest do
       {:ok, state_after_second, _} = State.append_signals(state_after_first, signals2)
 
       # Extract UUIDs (keys) from the log
-      uuids = Map.keys(state_after_second.log) |> Enum.sort()
+      uuids = state_after_second.log |> Map.keys() |> Enum.sort()
 
       # Verify we have all 4 signals
       assert length(uuids) == 4
@@ -120,7 +121,7 @@ defmodule JidoTest.Signal.Bus.StateTest do
       {:ok, new_state, _} = State.append_signals(state, signals)
 
       # Extract UUIDs (keys) from the log
-      uuids = Map.keys(new_state.log) |> Enum.sort()
+      uuids = new_state.log |> Map.keys() |> Enum.sort()
 
       # All UUIDs should have the same timestamp since they were generated in a batch
       timestamps = Enum.map(uuids, &ID.extract_timestamp/1)
@@ -154,7 +155,7 @@ defmodule JidoTest.Signal.Bus.StateTest do
       {:ok, state: state, signals: signals, returned_signals: returned_signals}
     end
 
-    test "returns signals in order by ID", %{state: state, signals: signals} do
+    test "returns signals in order by ID", %{signals: signals, state: state} do
       list = State.log_to_list(state)
       assert length(list) == 2
 
@@ -163,8 +164,8 @@ defmodule JidoTest.Signal.Bus.StateTest do
       assert first.id <= second.id
 
       # Verify all original signals are present by checking their data
-      original_data = Enum.map(signals, & &1.data) |> MapSet.new()
-      list_data = Enum.map(list, & &1.data) |> MapSet.new()
+      original_data = signals |> MapSet.new(& &1.data)
+      list_data = list |> MapSet.new(& &1.data)
       assert MapSet.equal?(original_data, list_data)
     end
 
@@ -229,7 +230,7 @@ defmodule JidoTest.Signal.Bus.StateTest do
       {:ok, truncated_state} = State.truncate_log(state, 3)
 
       # Get the log keys in sorted order
-      sorted_keys = Map.keys(truncated_state.log) |> Enum.sort()
+      sorted_keys = truncated_state.log |> Map.keys() |> Enum.sort()
 
       # Extract timestamps from the keys
       timestamps = Enum.map(sorted_keys, &ID.extract_timestamp/1)
@@ -271,10 +272,10 @@ defmodule JidoTest.Signal.Bus.StateTest do
 
     test "clears log but preserves other state fields", %{state: state} do
       # Add a subscription to the state
-      subscription = %Jido.Signal.Bus.Subscriber{
+      subscription = %Subscriber{
+        dispatch: {:pid, target: self()},
         id: "sub1",
         path: "test.*",
-        dispatch: {:pid, target: self()},
         persistent?: true
       }
 
@@ -294,11 +295,11 @@ defmodule JidoTest.Signal.Bus.StateTest do
   describe "add_route/2" do
     setup do
       state = %State{name: :test_bus}
-      route = %Router.Route{path: "test.*", target: {:pid, target: self()}, priority: 0}
+      route = %Router.Route{path: "test.*", priority: 0, target: {:pid, target: self()}}
       {:ok, state: state, route: route}
     end
 
-    test "adds valid route to router", %{state: state, route: route} do
+    test "adds valid route to router", %{route: route, state: state} do
       assert {:ok, new_state} = State.add_route(state, route)
       {:ok, routes} = Router.list(new_state.router)
       assert length(routes) == 1
@@ -314,19 +315,19 @@ defmodule JidoTest.Signal.Bus.StateTest do
   describe "remove_route/2" do
     setup do
       state = %State{name: :test_bus}
-      route = %Router.Route{path: "test.*", target: {:pid, target: self()}, priority: 0}
+      route = %Router.Route{path: "test.*", priority: 0, target: {:pid, target: self()}}
       {:ok, state} = State.add_route(state, route)
       {:ok, state: state, route: route}
     end
 
-    test "removes existing route", %{state: state, route: route} do
+    test "removes existing route", %{route: route, state: state} do
       assert {:ok, new_state} = State.remove_route(state, route)
       {:ok, routes} = Router.list(new_state.router)
       assert Enum.empty?(routes)
     end
 
     test "returns error for non-existent route", %{state: state} do
-      non_existent = %Router.Route{path: "other.*", target: {:pid, target: self()}, priority: 0}
+      non_existent = %Router.Route{path: "other.*", priority: 0, target: {:pid, target: self()}}
       assert {:error, _reason} = State.remove_route(state, non_existent)
     end
   end
@@ -335,10 +336,10 @@ defmodule JidoTest.Signal.Bus.StateTest do
     setup do
       state = %State{name: :test_bus}
 
-      subscription = %Jido.Signal.Bus.Subscriber{
+      subscription = %Subscriber{
+        dispatch: {:pid, target: self()},
         id: "sub1",
         path: "test.*",
-        dispatch: {:pid, target: self()},
         persistent?: true
       }
 
@@ -432,7 +433,7 @@ defmodule JidoTest.Signal.Bus.StateTest do
       {:ok, truncated_state} = State.truncate_log(state, 5)
 
       # Get log keys in sorted order
-      sorted_keys = Map.keys(truncated_state.log) |> Enum.sort()
+      sorted_keys = truncated_state.log |> Map.keys() |> Enum.sort()
 
       # Extract timestamps
       timestamps = Enum.map(sorted_keys, &ID.extract_timestamp/1)
@@ -474,7 +475,7 @@ defmodule JidoTest.Signal.Bus.StateTest do
       assert map_size(state_with_signals.log) == 100
 
       # Get log keys in sorted order
-      sorted_keys = Map.keys(state_with_signals.log) |> Enum.sort()
+      sorted_keys = state_with_signals.log |> Map.keys() |> Enum.sort()
 
       # Extract timestamps and sequence numbers
       timestamps = Enum.map(sorted_keys, &ID.extract_timestamp/1)

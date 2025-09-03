@@ -19,13 +19,15 @@ defmodule Jido.Signal.Journal.Adapters.ETS do
 
   use GenServer
 
-  defstruct [:signals_table, :causes_table, :effects_table, :conversations_table]
+  alias Jido.Signal.Journal.Persistence
+
+  defstruct [:causes_table, :conversations_table, :effects_table, :signals_table]
 
   @type t :: %__MODULE__{
-          signals_table: atom(),
           causes_table: atom(),
+          conversations_table: atom(),
           effects_table: atom(),
-          conversations_table: atom()
+          signals_table: atom()
         }
 
   # Client API
@@ -39,7 +41,7 @@ defmodule Jido.Signal.Journal.Adapters.ETS do
     GenServer.start_link(__MODULE__, prefix, name: name)
   end
 
-  @impl Jido.Signal.Journal.Persistence
+  @impl Persistence
   def init do
     # Generate a unique prefix for this instance
     prefix = "journal_#{System.unique_integer([:positive, :monotonic])}_"
@@ -50,37 +52,37 @@ defmodule Jido.Signal.Journal.Adapters.ETS do
     end
   end
 
-  @impl Jido.Signal.Journal.Persistence
+  @impl Persistence
   def put_signal(signal, pid) do
     GenServer.call(pid, {:put_signal, signal})
   end
 
-  @impl Jido.Signal.Journal.Persistence
+  @impl Persistence
   def get_signal(signal_id, pid) do
     GenServer.call(pid, {:get_signal, signal_id})
   end
 
-  @impl Jido.Signal.Journal.Persistence
+  @impl Persistence
   def put_cause(cause_id, effect_id, pid) do
     GenServer.call(pid, {:put_cause, cause_id, effect_id})
   end
 
-  @impl Jido.Signal.Journal.Persistence
+  @impl Persistence
   def get_effects(signal_id, pid) do
     GenServer.call(pid, {:get_effects, signal_id})
   end
 
-  @impl Jido.Signal.Journal.Persistence
+  @impl Persistence
   def get_cause(signal_id, pid) do
     GenServer.call(pid, {:get_cause, signal_id})
   end
 
-  @impl Jido.Signal.Journal.Persistence
+  @impl Persistence
   def put_conversation(conversation_id, signal_id, pid) do
     GenServer.call(pid, {:put_conversation, conversation_id, signal_id})
   end
 
-  @impl Jido.Signal.Journal.Persistence
+  @impl Persistence
   def get_conversation(conversation_id, pid) do
     GenServer.call(pid, {:get_conversation, conversation_id})
   end
@@ -123,14 +125,10 @@ defmodule Jido.Signal.Journal.Adapters.ETS do
   @impl GenServer
   def init(prefix) do
     adapter = %__MODULE__{
-      signals_table:
-        String.to_atom("#{prefix}signals_#{System.unique_integer([:positive, :monotonic])}"),
-      causes_table:
-        String.to_atom("#{prefix}causes_#{System.unique_integer([:positive, :monotonic])}"),
-      effects_table:
-        String.to_atom("#{prefix}effects_#{System.unique_integer([:positive, :monotonic])}"),
-      conversations_table:
-        String.to_atom("#{prefix}conversations_#{System.unique_integer([:positive, :monotonic])}")
+      causes_table: String.to_atom("#{prefix}causes_#{System.unique_integer([:positive, :monotonic])}"),
+      conversations_table: String.to_atom("#{prefix}conversations_#{System.unique_integer([:positive, :monotonic])}"),
+      effects_table: String.to_atom("#{prefix}effects_#{System.unique_integer([:positive, :monotonic])}"),
+      signals_table: String.to_atom("#{prefix}signals_#{System.unique_integer([:positive, :monotonic])}")
     }
 
     # Create tables if they don't exist
@@ -268,7 +266,8 @@ defmodule Jido.Signal.Journal.Adapters.ETS do
   @impl GenServer
   def handle_call(:get_all_signals, _from, adapter) do
     signals =
-      :ets.tab2list(adapter.signals_table)
+      adapter.signals_table
+      |> :ets.tab2list()
       |> Enum.map(fn {_id, signal} -> signal end)
 
     {:reply, signals, adapter}

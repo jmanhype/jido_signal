@@ -69,7 +69,16 @@ defmodule Jido.Signal.Dispatch do
       :ok = Dispatch.dispatch(signal, config)
   """
 
+  alias Jido.Signal.Dispatch.ConsoleAdapter
+  alias Jido.Signal.Dispatch.Http
+  alias Jido.Signal.Dispatch.LoggerAdapter
+  alias Jido.Signal.Dispatch.Named
+  alias Jido.Signal.Dispatch.NoopAdapter
+  alias Jido.Signal.Dispatch.PidAdapter
+  alias Jido.Signal.Dispatch.PubSub
+  alias Jido.Signal.Dispatch.Webhook
   alias Jido.Signal.Error
+  alias Jido.Signal.TaskSupervisor
 
   @type adapter ::
           :pid
@@ -94,14 +103,14 @@ defmodule Jido.Signal.Dispatch do
   @normalize_errors_compile_time Application.compile_env(:jido, :normalize_dispatch_errors, false)
 
   @builtin_adapters %{
-    pid: Jido.Signal.Dispatch.PidAdapter,
-    named: Jido.Signal.Dispatch.Named,
-    pubsub: Jido.Signal.Dispatch.PubSub,
-    logger: Jido.Signal.Dispatch.LoggerAdapter,
-    console: Jido.Signal.Dispatch.ConsoleAdapter,
-    noop: Jido.Signal.Dispatch.NoopAdapter,
-    http: Jido.Signal.Dispatch.Http,
-    webhook: Jido.Signal.Dispatch.Webhook,
+    console: ConsoleAdapter,
+    http: Http,
+    logger: LoggerAdapter,
+    named: Named,
+    noop: NoopAdapter,
+    pid: PidAdapter,
+    pubsub: PubSub,
+    webhook: Webhook,
     nil: nil
   }
 
@@ -166,7 +175,7 @@ defmodule Jido.Signal.Dispatch do
       {:error,
        Error.validation_error(
          "Invalid dispatch configuration",
-         %{field: "dispatch_config", value: invalid_config, reason: :invalid_dispatch_config}
+         %{field: "dispatch_config", reason: :invalid_dispatch_config, value: invalid_config}
        )}
     else
       {:error, :invalid_dispatch_config}
@@ -245,7 +254,7 @@ defmodule Jido.Signal.Dispatch do
     case validate_opts(config) do
       {:ok, validated_config} ->
         task =
-          Task.Supervisor.async_nolink(Jido.Signal.TaskSupervisor, fn ->
+          Task.Supervisor.async_nolink(TaskSupervisor, fn ->
             dispatch(signal, validated_config)
           end)
 
@@ -331,8 +340,8 @@ defmodule Jido.Signal.Dispatch do
     else
       batches = Enum.chunk_every(validated_configs_with_idx, batch_size)
 
-      Task.Supervisor.async_stream(
-        Jido.Signal.TaskSupervisor,
+      TaskSupervisor
+      |> Task.Supervisor.async_stream(
         batches,
         fn batch ->
           Enum.map(batch, fn {config, original_idx} ->
@@ -376,7 +385,7 @@ defmodule Jido.Signal.Dispatch do
       {:error,
        Error.dispatch_error(
          "Signal dispatch failed",
-         %{adapter: adapter, reason: reason, config: config}
+         %{adapter: adapter, config: config, reason: reason}
        )}
     else
       {:error, reason}
@@ -388,7 +397,7 @@ defmodule Jido.Signal.Dispatch do
       {:error,
        Error.dispatch_error(
          "Signal dispatch failed",
-         %{adapter: adapter, reason: reason, config: config}
+         %{adapter: adapter, config: config, reason: reason}
        )}
     else
       {:error, reason}
@@ -400,7 +409,7 @@ defmodule Jido.Signal.Dispatch do
       {:error,
        Error.validation_error(
          "Invalid adapter configuration",
-         %{field: "config", value: config, adapter: adapter, reason: reason}
+         %{adapter: adapter, field: "config", reason: reason, value: config}
        )}
     else
       {:error, reason}
@@ -412,7 +421,7 @@ defmodule Jido.Signal.Dispatch do
       {:error,
        Error.validation_error(
          "Invalid adapter configuration",
-         %{field: "config", value: config, adapter: adapter, reason: reason}
+         %{adapter: adapter, field: "config", reason: reason, value: config}
        )}
     else
       {:error, reason}

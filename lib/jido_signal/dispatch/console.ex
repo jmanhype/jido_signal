@@ -62,7 +62,9 @@ defmodule Jido.Signal.Dispatch.ConsoleAdapter do
 
   @behaviour Jido.Signal.Dispatch.Adapter
 
-  @impl Jido.Signal.Dispatch.Adapter
+  alias Jido.Signal.Dispatch.Adapter
+
+  @impl Adapter
   @doc """
   Validates the console adapter configuration options.
 
@@ -83,7 +85,7 @@ defmodule Jido.Signal.Dispatch.ConsoleAdapter do
     {:ok, opts}
   end
 
-  @impl Jido.Signal.Dispatch.Adapter
+  @impl Adapter
   @doc """
   Prints a signal to the console in a human-readable format.
 

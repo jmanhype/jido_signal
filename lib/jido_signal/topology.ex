@@ -74,10 +74,10 @@ defmodule Jido.Signal.Topology do
         # Create the process node
         process = %ProcessNode{
           id: id,
-          pid: pid,
-          name: Keyword.get(opts, :name),
           metadata: Keyword.get(opts, :metadata, %{}),
+          name: Keyword.get(opts, :name),
           parent_id: parent_id,
+          pid: pid,
           registered_at: DateTime.utc_now()
         }
 
@@ -387,7 +387,7 @@ defmodule Jido.Signal.Topology do
           |> Enum.map(fn child_id -> build_tree(topology, child_id) end)
           |> Enum.reject(&is_nil/1)
 
-        %{process: process, state: state, children: children}
+        %{children: children, process: process, state: state}
 
       :error ->
         nil

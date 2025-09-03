@@ -12,16 +12,16 @@ defmodule Jido.Signal.Bus.SnapshotTest do
     # Create a test bus state with some signals
     {:ok, signal1} =
       Signal.new(%{
-        type: "test.signal.1",
+        data: %{value: 1},
         source: "/test",
-        data: %{value: 1}
+        type: "test.signal.1"
       })
 
     {:ok, signal2} =
       Signal.new(%{
-        type: "test.signal.2",
+        data: %{value: 2},
         source: "/test",
-        data: %{value: 2}
+        type: "test.signal.2"
       })
 
     # Create signals with UUIDs as keys
@@ -31,9 +31,9 @@ defmodule Jido.Signal.Bus.SnapshotTest do
     }
 
     state = %BusState{
+      log: log_map,
       name: :test_bus,
       router: Router.new!(),
-      log: log_map,
       snapshots: %{}
     }
 
@@ -53,7 +53,7 @@ defmodule Jido.Signal.Bus.SnapshotTest do
       # Verify the actual data in persistent_term
       {:ok, snapshot_data} = Snapshot.read(new_state, snapshot_ref.id)
       assert map_size(snapshot_data.signals) == 1
-      assert Map.values(snapshot_data.signals) |> hd() |> Map.get(:type) == "test.signal.1"
+      assert snapshot_data.signals |> Map.values() |> hd() |> Map.get(:type) == "test.signal.1"
     end
 
     test "creates a snapshot with all signals using wildcard", %{state: state} do
@@ -101,9 +101,9 @@ defmodule Jido.Signal.Bus.SnapshotTest do
       # Create a new signal with a later timestamp
       {:ok, signal3} =
         Signal.new(%{
-          type: "test.signal.3",
+          data: %{value: 3},
           source: "/test",
-          data: %{value: 3}
+          type: "test.signal.3"
         })
 
       # Since we can't rely on timestamp filtering in the new implementation,
@@ -123,7 +123,7 @@ defmodule Jido.Signal.Bus.SnapshotTest do
       # Verify the snapshot only includes signals of the specified type
       {:ok, snapshot_data} = Snapshot.read(new_state, snapshot_ref.id)
       assert map_size(snapshot_data.signals) == 1
-      assert Map.values(snapshot_data.signals) |> hd() |> Map.get(:type) == "test.signal.3"
+      assert snapshot_data.signals |> Map.values() |> hd() |> Map.get(:type) == "test.signal.3"
     end
   end
 
@@ -172,7 +172,7 @@ defmodule Jido.Signal.Bus.SnapshotTest do
       assert snapshot_data.path == snapshot_ref.path
       assert snapshot_data.created_at == snapshot_ref.created_at
       assert map_size(snapshot_data.signals) == 1
-      assert Map.values(snapshot_data.signals) |> hd() |> Map.get(:type) == "test.signal.1"
+      assert snapshot_data.signals |> Map.values() |> hd() |> Map.get(:type) == "test.signal.1"
     end
 
     test "returns error when snapshot not found", %{state: state} do
@@ -186,9 +186,9 @@ defmodule Jido.Signal.Bus.SnapshotTest do
       # Add more signals to the state (which shouldn't affect the snapshot)
       {:ok, signal3} =
         Signal.new(%{
-          type: "test.signal.3",
+          data: %{value: 3},
           source: "/test",
-          data: %{value: 3}
+          type: "test.signal.3"
         })
 
       # Add the new signal directly to the log
@@ -200,7 +200,7 @@ defmodule Jido.Signal.Bus.SnapshotTest do
 
       # Verify the snapshot still only contains the original signals
       assert map_size(snapshot_data.signals) == 1
-      assert Map.values(snapshot_data.signals) |> hd() |> Map.get(:type) == "test.signal.1"
+      assert snapshot_data.signals |> Map.values() |> hd() |> Map.get(:type) == "test.signal.1"
     end
   end
 
@@ -254,7 +254,7 @@ defmodule Jido.Signal.Bus.SnapshotTest do
       {:ok, snapshot_data} = Snapshot.read(state, custom_id)
       assert snapshot_data.path == "test.signal.2"
       assert map_size(snapshot_data.signals) == 1
-      assert Map.values(snapshot_data.signals) |> hd() |> Map.get(:type) == "test.signal.2"
+      assert snapshot_data.signals |> Map.values() |> hd() |> Map.get(:type) == "test.signal.2"
     end
   end
 
@@ -265,9 +265,9 @@ defmodule Jido.Signal.Bus.SnapshotTest do
 
       # Create a completely new state with the same snapshot reference
       new_state = %BusState{
+        log: %{},
         name: :test_bus_2,
         router: Router.new!(),
-        log: %{},
         snapshots: %{snapshot_ref.id => snapshot_ref}
       }
 
@@ -278,7 +278,7 @@ defmodule Jido.Signal.Bus.SnapshotTest do
       assert snapshot_data.id == snapshot_ref.id
       assert snapshot_data.path == "test.signal.1"
       assert map_size(snapshot_data.signals) == 1
-      assert Map.values(snapshot_data.signals) |> hd() |> Map.get(:type) == "test.signal.1"
+      assert snapshot_data.signals |> Map.values() |> hd() |> Map.get(:type) == "test.signal.1"
     end
 
     test "snapshot data is immutable", %{state: state} do

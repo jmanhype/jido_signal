@@ -131,17 +131,17 @@ defmodule Jido.Signal.Bus.Snapshot do
 
         # Create the full snapshot data
         snapshot_data = %SnapshotData{
+          created_at: now,
           id: id,
           path: path,
-          signals: signals_map,
-          created_at: now
+          signals: signals_map
         }
 
         # Create the lightweight reference
         snapshot_ref = %SnapshotRef{
+          created_at: now,
           id: id,
-          path: path,
-          created_at: now
+          path: path
         }
 
         # Store the full data in persistent_term

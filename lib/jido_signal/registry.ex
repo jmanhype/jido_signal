@@ -7,6 +7,8 @@ defmodule Jido.Signal.Registry do
   """
   use TypedStruct
 
+  alias Jido.Signal.Router
+
   typedstruct module: Subscription do
     @moduledoc """
     Represents a subscription to signal patterns in the registry.
@@ -59,10 +61,10 @@ defmodule Jido.Signal.Registry do
       {:error, :already_exists}
     else
       subscription = %Subscription{
-        id: id,
-        path: path,
+        created_at: DateTime.utc_now(),
         dispatch: dispatch,
-        created_at: DateTime.utc_now()
+        id: id,
+        path: path
       }
 
       subscriptions = Map.put(registry.subscriptions, id, subscription)
@@ -119,7 +121,7 @@ defmodule Jido.Signal.Registry do
     registry.subscriptions
     |> Map.values()
     |> Enum.filter(fn subscription ->
-      Jido.Signal.Router.matches?(path, subscription.path)
+      Router.matches?(path, subscription.path)
     end)
   end
 

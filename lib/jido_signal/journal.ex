@@ -7,6 +7,8 @@ defmodule Jido.Signal.Journal do
   use TypedStruct
 
   alias Jido.Signal
+  alias Jido.Signal.Journal.Adapters.ETS
+  alias Jido.Signal.Journal.Adapters.InMemory
 
   typedstruct do
     @typedoc "The journal maintains the graph of signals and their relationships"
@@ -25,7 +27,7 @@ defmodule Jido.Signal.Journal do
   Creates a new journal with the specified persistence adapter.
   """
   @spec new(module()) :: t()
-  def new(adapter \\ Jido.Signal.Journal.Adapters.InMemory) do
+  def new(adapter \\ InMemory) do
     case adapter.init() do
       {:ok, pid} ->
         %__MODULE__{adapter: adapter, adapter_pid: pid}
@@ -173,7 +175,8 @@ defmodule Jido.Signal.Journal do
   def query(%__MODULE__{} = journal, opts \\ []) do
     # Note: This is inefficient for large datasets as it loads all signals
     # A real implementation would push filtering down to the persistence layer
-    get_all_signals(journal)
+    journal
+    |> get_all_signals()
     |> Enum.filter(&matches_criteria?(&1, opts))
     |> Enum.sort_by(& &1.time, &sort_time_compare/2)
   end
@@ -236,11 +239,10 @@ defmodule Jido.Signal.Journal do
   end
 
   defp call_adapter({:error, {:already_started, pid}}, function, args) do
-    apply(Jido.Signal.Journal.Adapters.ETS, function, args ++ [pid])
+    apply(ETS, function, args ++ [pid])
   end
 
-  defp call_adapter(%__MODULE__{adapter: adapter, adapter_pid: pid} = _journal, function, args)
-       when not is_nil(pid) do
+  defp call_adapter(%__MODULE__{adapter: adapter, adapter_pid: pid} = _journal, function, args) when not is_nil(pid) do
     apply(adapter, function, args ++ [pid])
   end
 

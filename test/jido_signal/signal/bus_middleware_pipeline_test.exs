@@ -152,14 +152,14 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
 
       signals = [
         %Signal{
+          data: %{},
           id: "test-1",
-          type: "test.signal",
           source: "/test",
-          data: %{}
+          type: "test.signal"
         }
       ]
 
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
 
       assert {:ok, processed_signals} =
                MiddlewarePipeline.before_publish(configs, signals, context)
@@ -176,15 +176,15 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
           {TransformMiddleware, []}
         ])
 
-      signals = [%Signal{id: "test-1", type: "test.signal", source: "/test", data: %{}}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{data: %{}, id: "test-1", source: "/test", type: "test.signal"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
 
       assert {:error, :custom_halt} = MiddlewarePipeline.before_publish(configs, signals, context)
     end
 
     test "continues with empty middleware list" do
-      signals = [%Signal{id: "test-1", type: "test.signal", source: "/test", data: %{}}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{data: %{}, id: "test-1", source: "/test", type: "test.signal"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
 
       assert {:ok, ^signals} = MiddlewarePipeline.before_publish([], signals, context)
     end
@@ -212,8 +212,8 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
 
       {:ok, configs} = MiddlewarePipeline.init_middleware([{MinimalMiddleware, []}])
 
-      signals = [%Signal{id: "test-1", type: "test.signal", source: "/test", data: %{}}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{data: %{}, id: "test-1", source: "/test", type: "test.signal"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
 
       assert {:ok, ^signals} = MiddlewarePipeline.before_publish(configs, signals, context)
     end
@@ -223,16 +223,16 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
     test "executes all middleware after_publish callbacks" do
       {:ok, configs} = MiddlewarePipeline.init_middleware([{TestMiddleware1, []}])
 
-      signals = [%Signal{id: "test-1", type: "test.signal", source: "/test", data: %{}}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{data: %{}, id: "test-1", source: "/test", type: "test.signal"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
 
       # after_publish should always return :ok
       assert :ok = MiddlewarePipeline.after_publish(configs, signals, context)
     end
 
     test "continues with empty middleware list" do
-      signals = [%Signal{id: "test-1", type: "test.signal", source: "/test", data: %{}}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{data: %{}, id: "test-1", source: "/test", type: "test.signal"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
 
       assert :ok = MiddlewarePipeline.after_publish([], signals, context)
     end
@@ -241,23 +241,23 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
   describe "before_dispatch/4" do
     setup do
       subscriber = %Subscriber{
+        dispatch: {:pid, target: self(), delivery_mode: :async},
         id: "test-subscription-#{:erlang.unique_integer([:positive])}",
         path: "test.signal",
-        dispatch: {:pid, target: self(), delivery_mode: :async},
-        persistent?: false,
-        persistence_pid: nil
+        persistence_pid: nil,
+        persistent?: false
       }
 
-      signal = %Signal{id: "test-1", type: "test.signal", source: "/test", data: %{}}
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signal = %Signal{data: %{}, id: "test-1", source: "/test", type: "test.signal"}
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
 
       {:ok, subscriber: subscriber, signal: signal, context: context}
     end
 
     test "executes middleware chain successfully", %{
-      subscriber: subscriber,
+      context: context,
       signal: signal,
-      context: context
+      subscriber: subscriber
     } do
       {:ok, configs} =
         MiddlewarePipeline.init_middleware([
@@ -273,9 +273,9 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
     end
 
     test "returns skip when middleware skips", %{
-      subscriber: subscriber,
+      context: context,
       signal: signal,
-      context: context
+      subscriber: subscriber
     } do
       {:ok, configs} =
         MiddlewarePipeline.init_middleware([
@@ -288,9 +288,9 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
     end
 
     test "halts execution when middleware returns halt", %{
-      subscriber: subscriber,
+      context: context,
       signal: signal,
-      context: context
+      subscriber: subscriber
     } do
       {:ok, configs} =
         MiddlewarePipeline.init_middleware([
@@ -304,9 +304,9 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
     end
 
     test "continues with empty middleware list", %{
-      subscriber: subscriber,
+      context: context,
       signal: signal,
-      context: context
+      subscriber: subscriber
     } do
       assert {:ok, ^signal} = MiddlewarePipeline.before_dispatch([], signal, subscriber, context)
     end
@@ -315,23 +315,23 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
   describe "after_dispatch/5" do
     setup do
       subscriber = %Subscriber{
+        dispatch: {:pid, target: self(), delivery_mode: :async},
         id: "test-subscription-#{:erlang.unique_integer([:positive])}",
         path: "test.signal",
-        dispatch: {:pid, target: self(), delivery_mode: :async},
-        persistent?: false,
-        persistence_pid: nil
+        persistence_pid: nil,
+        persistent?: false
       }
 
-      signal = %Signal{id: "test-1", type: "test.signal", source: "/test", data: %{}}
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signal = %Signal{data: %{}, id: "test-1", source: "/test", type: "test.signal"}
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
 
       {:ok, subscriber: subscriber, signal: signal, context: context}
     end
 
     test "executes all middleware after_dispatch callbacks", %{
-      subscriber: subscriber,
+      context: context,
       signal: signal,
-      context: context
+      subscriber: subscriber
     } do
       {:ok, configs} = MiddlewarePipeline.init_middleware([{TestMiddleware1, []}])
 
@@ -342,7 +342,7 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
                MiddlewarePipeline.after_dispatch(configs, signal, subscriber, result, context)
     end
 
-    test "handles error results", %{subscriber: subscriber, signal: signal, context: context} do
+    test "handles error results", %{context: context, signal: signal, subscriber: subscriber} do
       {:ok, configs} = MiddlewarePipeline.init_middleware([{TestMiddleware1, []}])
 
       result = {:error, :dispatch_failed}
@@ -352,9 +352,9 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
     end
 
     test "continues with empty middleware list", %{
-      subscriber: subscriber,
+      context: context,
       signal: signal,
-      context: context
+      subscriber: subscriber
     } do
       result = :ok
 
@@ -372,7 +372,7 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
         def init(opts) do
           test_pid = Keyword.fetch!(opts, :test_pid)
           id = Keyword.fetch!(opts, :id)
-          {:ok, %{test_pid: test_pid, id: id}}
+          {:ok, %{id: id, test_pid: test_pid}}
         end
 
         @impl true
@@ -390,8 +390,8 @@ defmodule JidoTest.Signal.Bus.MiddlewarePipeline do
 
       {:ok, configs} = MiddlewarePipeline.init_middleware(middleware_specs)
 
-      signals = [%Signal{id: "test-1", type: "test.signal", source: "/test", data: %{}}]
-      context = %{bus_name: :test, timestamp: DateTime.utc_now(), metadata: %{}}
+      signals = [%Signal{data: %{}, id: "test-1", source: "/test", type: "test.signal"}]
+      context = %{bus_name: :test, metadata: %{}, timestamp: DateTime.utc_now()}
 
       MiddlewarePipeline.before_publish(configs, signals, context)
 

@@ -11,9 +11,9 @@ defmodule Jido.Signal.Bus.StreamTest do
   describe "publish/3" do
     test "rejects invalid signals" do
       state = %BusState{
+        log: %{},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{}
+        router: Router.new!()
       }
 
       signals = [
@@ -26,23 +26,23 @@ defmodule Jido.Signal.Bus.StreamTest do
 
     test "successfully publishes valid signals to the bus" do
       state = %BusState{
+        log: %{},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{}
+        router: Router.new!()
       }
 
       {:ok, signal1} =
         Signal.new(%{
-          type: "test.signal.1",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal.1"
         })
 
       {:ok, signal2} =
         Signal.new(%{
-          type: "test.signal.2",
+          data: %{value: 2},
           source: "/test",
-          data: %{value: 2}
+          type: "test.signal.2"
         })
 
       signals = [signal1, signal2]
@@ -56,7 +56,7 @@ defmodule Jido.Signal.Bus.StreamTest do
       assert map_size(new_state.log) == 2
 
       # Verify all signals are in the log
-      signal_types = Enum.map(log_signals, & &1.type) |> Enum.sort()
+      signal_types = log_signals |> Enum.map(& &1.type) |> Enum.sort()
       assert signal_types == ["test.signal.1", "test.signal.2"]
 
       # Verify signals are proper structs
@@ -67,9 +67,9 @@ defmodule Jido.Signal.Bus.StreamTest do
 
     test "maintains strict ordering of signals published in rapid succession" do
       state = %BusState{
+        log: %{},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{}
+        router: Router.new!()
       }
 
       # Create 10 signals as fast as possible
@@ -77,9 +77,9 @@ defmodule Jido.Signal.Bus.StreamTest do
         Enum.map(1..10, fn i ->
           {:ok, signal} =
             Signal.new(%{
-              type: "test.signal.#{i}",
+              data: %{value: i},
               source: "/test",
-              data: %{value: i}
+              type: "test.signal.#{i}"
             })
 
           signal
@@ -102,23 +102,23 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "appends new signals to existing log" do
       {:ok, original_signal} =
         Signal.new(%{
-          type: "test.signal.1",
+          data: %{value: 0},
           source: "/test",
-          data: %{value: 0}
+          type: "test.signal.1"
         })
 
       # Add the signal directly to the log with a UUID key
       state = %BusState{
+        log: %{"existing-uuid" => original_signal},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{"existing-uuid" => original_signal}
+        router: Router.new!()
       }
 
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal.2",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal.2"
         })
 
       signals = [signal]
@@ -138,16 +138,16 @@ defmodule Jido.Signal.Bus.StreamTest do
 
     test "preserves correlation_id when present in metadata" do
       state = %BusState{
+        log: %{},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{}
+        router: Router.new!()
       }
 
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       signals = [signal]
@@ -162,9 +162,9 @@ defmodule Jido.Signal.Bus.StreamTest do
 
     test "handles empty signal list" do
       state = %BusState{
+        log: %{},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{}
+        router: Router.new!()
       }
 
       # The implementation doesn't support empty signal lists
@@ -179,17 +179,17 @@ defmodule Jido.Signal.Bus.StreamTest do
 
     test "handles signals with custom IDs" do
       state = %BusState{
+        log: %{},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{}
+        router: Router.new!()
       }
 
       {:ok, signal} =
         Signal.new(%{
+          data: %{value: 1},
           id: "custom-id",
-          type: "test.signal",
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       signals = [signal]
@@ -210,16 +210,16 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "filters signals by type" do
       {:ok, signal1} =
         Signal.new(%{
-          type: "test.signal.1",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal.1"
         })
 
       {:ok, signal2} =
         Signal.new(%{
-          type: "test.signal.2",
+          data: %{value: 2},
           source: "/test",
-          data: %{value: 2}
+          type: "test.signal.2"
         })
 
       # Create a log with signals directly
@@ -229,9 +229,9 @@ defmodule Jido.Signal.Bus.StreamTest do
       }
 
       state = %BusState{
+        log: log_map,
         name: :test_bus,
-        router: Router.new!(),
-        log: log_map
+        router: Router.new!()
       }
 
       {:ok, filtered_signals} = Stream.filter(state, "test.signal.1")
@@ -243,16 +243,16 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "returns all signals with wildcard type pattern" do
       {:ok, signal1} =
         Signal.new(%{
-          type: "test.signal.1",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal.1"
         })
 
       {:ok, signal2} =
         Signal.new(%{
-          type: "test.signal.2",
+          data: %{value: 2},
           source: "/test",
-          data: %{value: 2}
+          type: "test.signal.2"
         })
 
       # Create a log with signals directly
@@ -262,9 +262,9 @@ defmodule Jido.Signal.Bus.StreamTest do
       }
 
       state = %BusState{
+        log: log_map,
         name: :test_bus,
-        router: Router.new!(),
-        log: log_map
+        router: Router.new!()
       }
 
       {:ok, filtered_signals} = Stream.filter(state, "**")
@@ -275,9 +275,9 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "respects start_timestamp and batch_size" do
       # Create a state with a router
       state = %BusState{
+        log: %{},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{}
+        router: Router.new!()
       }
 
       # Create signals directly in the log with fixed UUIDs
@@ -311,15 +311,15 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "returns empty list when no signals match filter" do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       state = %BusState{
+        log: %{"uuid-1" => signal},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{"uuid-1" => signal}
+        router: Router.new!()
       }
 
       {:ok, filtered_signals} = Stream.filter(state, "non.existent.signal")
@@ -328,9 +328,9 @@ defmodule Jido.Signal.Bus.StreamTest do
 
     test "handles invalid path pattern" do
       state = %BusState{
+        log: %{},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{}
+        router: Router.new!()
       }
 
       assert {:error, _} = Stream.filter(state, "invalid**path")
@@ -339,25 +339,25 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "filters signals by correlation_id" do
       {:ok, signal1} =
         Signal.new(%{
-          type: "test.signal.1",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal.1"
         })
 
       {:ok, signal2} =
         Signal.new(%{
-          type: "test.signal.2",
+          data: %{value: 2},
           source: "/test",
-          data: %{value: 2}
+          type: "test.signal.2"
         })
 
       state = %BusState{
-        name: :test_bus,
-        router: Router.new!(),
         log: %{
           "uuid-1" => signal1,
           "uuid-2" => signal2
-        }
+        },
+        name: :test_bus,
+        router: Router.new!()
       }
 
       # The current implementation in Stream.filter checks signal.correlation_id
@@ -373,9 +373,9 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "returns signals in chronological order" do
       {:ok, base_signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 0},
           source: "/test",
-          data: %{value: 0}
+          type: "test.signal"
         })
 
       # Create signals with UUIDs as keys
@@ -391,9 +391,9 @@ defmodule Jido.Signal.Bus.StreamTest do
       }
 
       state = %BusState{
+        log: log_map,
         name: :test_bus,
-        router: Router.new!(),
-        log: log_map
+        router: Router.new!()
       }
 
       {:ok, filtered_signals} = Stream.filter(state, "test.signal")
@@ -408,24 +408,24 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "truncates log to specified size" do
       {:ok, base_signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 0},
           source: "/test",
-          data: %{value: 0}
+          type: "test.signal"
         })
 
       # Create 10 signals with sequential IDs
       signals =
         Enum.map(1..10, fn i ->
-          %{base_signal | id: "signal-#{i}", data: %{value: i}}
+          %{base_signal | data: %{value: i}, id: "signal-#{i}"}
         end)
 
       # Create a log map with UUID keys
       log_map = Map.new(1..10, fn i -> {"uuid-#{i}", Enum.at(signals, i - 1)} end)
 
       state = %BusState{
+        log: log_map,
         name: :test_bus,
-        router: Router.new!(),
-        log: log_map
+        router: Router.new!()
       }
 
       # Truncate to 5 signals
@@ -438,15 +438,15 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "does nothing when log is smaller than max size" do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       state = %BusState{
+        log: %{"uuid-1" => signal},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{"uuid-1" => signal}
+        router: Router.new!()
       }
 
       # Try to truncate to 5 signals
@@ -460,15 +460,15 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "handles truncating to zero" do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       state = %BusState{
+        log: %{"uuid-1" => signal},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{"uuid-1" => signal}
+        router: Router.new!()
       }
 
       # Truncate to 0 signals
@@ -483,15 +483,15 @@ defmodule Jido.Signal.Bus.StreamTest do
     test "clears all signals from log" do
       {:ok, signal} =
         Signal.new(%{
-          type: "test.signal",
+          data: %{value: 1},
           source: "/test",
-          data: %{value: 1}
+          type: "test.signal"
         })
 
       state = %BusState{
+        log: %{"uuid-1" => signal},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{"uuid-1" => signal}
+        router: Router.new!()
       }
 
       # Clear the log
@@ -503,9 +503,9 @@ defmodule Jido.Signal.Bus.StreamTest do
 
     test "handles already empty log" do
       state = %BusState{
+        log: %{},
         name: :test_bus,
-        router: Router.new!(),
-        log: %{}
+        router: Router.new!()
       }
 
       # Clear the log

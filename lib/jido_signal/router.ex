@@ -172,11 +172,13 @@ defmodule Jido.Signal.Router do
 
   alias Jido.Signal
   alias Jido.Signal.Error
+  alias Jido.Signal.ID
+  alias Jido.Signal.Router
   alias Jido.Signal.Router.{Engine, Route, Validator}
 
   @type t :: %{
-          trie: __MODULE__.TrieNode.t(),
-          route_count: non_neg_integer()
+          route_count: non_neg_integer(),
+          trie: __MODULE__.TrieNode.t()
         }
 
   @type path :: String.t()
@@ -214,17 +216,17 @@ defmodule Jido.Signal.Router do
   typedstruct module: HandlerInfo do
     @moduledoc "Router Helper struct to store handler metadata"
     @default_priority 0
-    field(:target, Jido.Signal.Router.target(), enforce: true)
-    field(:priority, Jido.Signal.Router.priority(), default: @default_priority)
+    field(:target, Router.target(), enforce: true)
+    field(:priority, Router.priority(), default: @default_priority)
     field(:complexity, non_neg_integer(), default: 0)
   end
 
   typedstruct module: PatternMatch do
     @moduledoc "Router Helper struct to store pattern match metadata"
     @default_priority 0
-    field(:match, Jido.Signal.Router.match(), enforce: true)
-    field(:target, Jido.Signal.Router.target(), enforce: true)
-    field(:priority, Jido.Signal.Router.priority(), default: @default_priority)
+    field(:match, Router.match(), enforce: true)
+    field(:target, Router.target(), enforce: true)
+    field(:priority, Router.priority(), default: @default_priority)
     field(:complexity, non_neg_integer(), default: 0)
   end
 
@@ -236,7 +238,7 @@ defmodule Jido.Signal.Router do
 
   typedstruct module: WildcardHandlers do
     @moduledoc "Router Helper struct to store wildcard handler metadata"
-    field(:type, Jido.Signal.Router.wildcard_type(), enforce: true)
+    field(:type, Router.wildcard_type(), enforce: true)
     field(:handlers, NodeHandlers.t(), enforce: true)
   end
 
@@ -250,10 +252,10 @@ defmodule Jido.Signal.Router do
   typedstruct module: Route do
     @moduledoc "Router Helper struct to store route metadata"
     @default_priority 0
-    field(:path, Jido.Signal.Router.path(), enforce: true)
-    field(:target, Jido.Signal.Router.target(), enforce: true)
-    field(:priority, Jido.Signal.Router.priority(), default: @default_priority)
-    field(:match, Jido.Signal.Router.match())
+    field(:path, Router.path(), enforce: true)
+    field(:target, Router.target(), enforce: true)
+    field(:priority, Router.priority(), default: @default_priority)
+    field(:match, Router.match())
   end
 
   typedstruct module: Router do
@@ -275,7 +277,7 @@ defmodule Jido.Signal.Router do
     with {:ok, normalized} <- Validator.normalize(routes),
          {:ok, validated} <- validate(normalized) do
       trie = Engine.build_trie(validated)
-      {:ok, %Router{trie: trie, route_count: length(validated)}}
+      {:ok, %Router{route_count: length(validated), trie: trie}}
     end
   end
 
@@ -291,7 +293,7 @@ defmodule Jido.Signal.Router do
       {:error, reason} ->
         raise Error.validation_error(
                 "Invalid router configuration",
-                %{field: "routes", value: routes, reason: reason}
+                %{field: "routes", reason: reason, value: routes}
               )
     end
   end
@@ -317,7 +319,7 @@ defmodule Jido.Signal.Router do
     with {:ok, normalized} <- Validator.normalize(routes),
          {:ok, validated} <- validate(normalized) do
       new_trie = Engine.build_trie(validated, router.trie)
-      {:ok, %{router | trie: new_trie, route_count: router.route_count + length(validated)}}
+      {:ok, %{router | route_count: router.route_count + length(validated), trie: new_trie}}
     end
   end
 
@@ -344,7 +346,7 @@ defmodule Jido.Signal.Router do
   def remove(%Router{} = router, paths) when is_list(paths) do
     new_trie = Enum.reduce(paths, router.trie, &Engine.remove_path/2)
     route_count = Engine.count_routes(new_trie)
-    {:ok, %{router | trie: new_trie, route_count: route_count}}
+    {:ok, %{router | route_count: route_count, trie: new_trie}}
   end
 
   def remove(%Router{} = router, path) when is_binary(path) do
@@ -455,10 +457,10 @@ defmodule Jido.Signal.Router do
          {:ok, priority} <- Validator.validate_priority(route.priority) do
       {:ok,
        %Route{
-         path: path,
-         target: target,
          match: match,
-         priority: priority
+         path: path,
+         priority: priority,
+         target: target
        }}
     end
   end
@@ -518,7 +520,7 @@ defmodule Jido.Signal.Router do
     {:error,
      Error.routing_error(
        "Signal type cannot be nil",
-       %{route: nil, reason: :nil_signal_type}
+       %{reason: :nil_signal_type, route: nil}
      )}
   end
 
@@ -530,7 +532,7 @@ defmodule Jido.Signal.Router do
         {:error,
          Error.routing_error(
            "No matching handlers found for signal",
-           %{signal_type: signal.type, route: signal.type, reason: :no_handlers_found}
+           %{reason: :no_handlers_found, route: signal.type, signal_type: signal.type}
          )}
 
       _ ->
@@ -608,18 +610,18 @@ defmodule Jido.Signal.Router do
   defp do_matches?(type, pattern) do
     # Create a test signal with required fields
     test_signal = %Signal{
-      type: type,
+      data: %{},
+      id: ID.generate!(),
       source: "/test",
-      id: Jido.Signal.ID.generate!(),
       specversion: "1.0.2",
-      data: %{}
+      type: type
     }
 
     # Create a test route with a dummy target
     test_route = %Route{
       path: pattern,
-      target: {:noop, []},
-      priority: 0
+      priority: 0,
+      target: {:noop, []}
     }
 
     # Validate the pattern first
@@ -681,8 +683,8 @@ defmodule Jido.Signal.Router do
         # Create a test route with a dummy target
         test_route = %Route{
           path: pattern,
-          target: {:noop, []},
-          priority: 0
+          priority: 0,
+          target: {:noop, []}
         }
 
         # Build a trie with just this route
